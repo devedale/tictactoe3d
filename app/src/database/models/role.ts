@@ -22,11 +22,9 @@ class Role extends Model {
         },
         createdAt: {
           type: DataTypes.DATE,
-          field: 'createdat',
         },
         updatedAt: {
           type: DataTypes.DATE,
-          field: 'updatedat',
         },
       },
       {

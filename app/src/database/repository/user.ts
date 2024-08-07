@@ -2,15 +2,10 @@ import { User } from '../models/user';
 import { RoleRepository } from './role';
 
 interface ICreateUser {
-  nickname: string;
   email: string;
   password: string;
 }
 
-interface UserRank {
-  nickname: string;
-  coins: number;
-}
 
 const roleRepository = new RoleRepository();
 

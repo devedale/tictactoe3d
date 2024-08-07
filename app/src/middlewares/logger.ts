@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
 export default (req: Request, res: Response, next: NextFunction) => {
-
   const userData = {
     timestamp: new Date().toISOString(),
     ip: req.ip,
@@ -12,21 +11,24 @@ export default (req: Request, res: Response, next: NextFunction) => {
     referrer: req.get('Referrer'),
   };
 
-  const logData = (data:object, msg:string):void => {
-    console.log(JSON.stringify(userData,null,2).split('\n').map(line => msg + line).join('\n'))
+  const logData = (data: object, msg: string): void => {
+    console.log(
+      '\n' +
+        JSON.stringify(userData, null, 2)
+          .split('\n')
+          .map((line) => msg + line)
+          .join('\n') +
+        '\n'
+    );
   };
-  
 
-  logData(userData,'#LOGGER REQUEST#: User data: ');
-  logData(req.body,'#LOGGER REQUEST#: Request body: ');
-
-
+  logData(userData, '#LOGGER REQUEST#: User data: ');
+  logData(req.body, '#LOGGER REQUEST#: Request body: ');
 
   const oldSend = res.send;
   res.send = function (data) {
-    
-    logData(res.getHeaders(),'#LOGGER RESPONSE#: Response headers: ');
-    logData(data,'#LOGGER RESPONSE#: Response data: ');
+    logData(res.getHeaders(), '#LOGGER RESPONSE#: Response headers: ');
+    logData(data, '#LOGGER RESPONSE#: Response data: ');
 
     return oldSend.bind(this, data)();
   };

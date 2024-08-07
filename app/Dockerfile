@@ -27,5 +27,5 @@ EXPOSE 3000
 
 ENTRYPOINT ["/usr/local/bin/migrate_seed.sh"]
 
-CMD ["sh", "-c", "if [ \"$NODE_ENV\" = 'development' ]; then npm run dev; else npm run start; fi"]
+CMD ["sh", "-c", "if [ \"$NODE_ENV\" = 'development' ]; then npm run prettier; else npm run start; fi"]
 

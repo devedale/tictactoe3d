@@ -1,9 +1,7 @@
 import * as Errors from './AppError';
 import { HttpStatusCode } from './HttpStatusCode';
 
-/**
- * Factory per la creazione di errori personalizzati.
- */
+/** Factory per la creazione di errori personalizzati. */
 export class ErrorFactory {
   static getError(type: string): Errors.ErrorMsg | null {
     switch (HttpStatusCode[type]) {

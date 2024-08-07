@@ -10,8 +10,8 @@ const roleRepository = new RoleRepository();
 
 class UserService {
   async registerUser(req: Request, res: Response, next: NextFunction) {
-    req.validate(['nickname', 'email', 'password']);
-    const { nickname, email, password } = req.body;
+    req.validate(['email', 'password']);
+    const { email, password } = req.body;
 
     if (!email || !password) {
       return res.build('BadRequest', 'Email and password are required in the request body');
@@ -21,21 +21,18 @@ class UserService {
       if (await userRepository.getUserByEmail(email)) {
         return res.build('Conflict', 'Utente gia registrato');
       }
-      const desiredRole = 'user';
+      const desiredRole = 'User';
       const role = await roleRepository.getRoleByName(desiredRole);
       if (!role) {
         return res.build('BadRequest', `Il ruolo "user" non esiste`);
       }
       const roleId = role.id;
-      const coins = 0;
-      const validated = 0;
+      const tokens = 0;
       const newUser = await userRepository.createUser({
-        nickname,
         email,
         password,
+        tokens,
         roleId,
-        coins,
-        validated,
       });
       res.build('Created', 'Registrazione completata', newUser);
     } catch (err) {
@@ -66,7 +63,7 @@ class UserService {
         token = jwt.sign(
           {
             userId: user.id,
-            nickname: user.nickname,
+            email: user.email,
             exp: Math.floor(Date.now() / 1000) + 60 * 60 * parseInt(process.env.JWT_EXP_H || '1'),
           },
           private_key,
@@ -77,7 +74,7 @@ class UserService {
         token = jwt.sign(
           {
             userId: user.id,
-            nickname: user.nickname,
+            email: user.email,
             exp: Math.floor(Date.now() / 1000) + 60 * 60 * parseInt(process.env.JWT_EXP_H || '1'),
           },
           process.env.JWT_SECRET_KEY

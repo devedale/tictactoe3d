@@ -8,7 +8,7 @@ class User extends Model {
   private id!: number;
   private email!: string;
   private password!: string;
-  private tokens!: number; 
+  private tokens!: number;
   private roleId!: number;
   public dao!: Dao<User>;
 
@@ -36,7 +36,6 @@ class User extends Model {
         },
         roleId: {
           type: DataTypes.INTEGER,
-          field: 'roleid',
           references: {
             model: 'roles',
             key: 'id',
@@ -45,11 +44,9 @@ class User extends Model {
         },
         createdAt: {
           type: DataTypes.DATE,
-          field: 'createdat',
         },
         updatedAt: {
           type: DataTypes.DATE,
-          field: 'updatedat',
         },
       },
       {
