@@ -1,0 +1,67 @@
+version: '3'
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    ports:
+      - "${EXT_API_PORT}:${API_PORT}"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - network1
+      - network2
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      API_VERSION: ${API_VERSION}
+      API_PORT: ${API_PORT}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      RSA_AUTH: ${RSA_AUTH}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_EXP_H: ${JWT_EXP_H}
+      EXPECTED_FILTER_HEADER: ${EXPECTED_FILTER_HEADER}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DB: ${DB_NAME}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_URL: ${REDIS_URL}
+      REDIS_PORT: ${REDIS_PORT}
+    volumes:
+      - ./app/src:/usr/src/app/src
+
+  db:
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./db/initdb:/docker-entrypoint-initdb.d
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - network1
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U $DB_USER -d $DB_NAME -c 'SELECT 1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis
+    depends_on:
+      - app
+    networks:
+      - network2
+
+volumes:
+  db_data:
+
+networks:
+  network1:
+    driver: bridge
+  network2:
+    driver: bridge
