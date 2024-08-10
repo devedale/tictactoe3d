@@ -6,7 +6,6 @@ interface ICreateUser {
   password: string;
 }
 
-
 const roleRepository = new RoleRepository();
 
 class UserRepository {

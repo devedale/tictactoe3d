@@ -21,17 +21,40 @@ export default (req: Request, res: Response, next: NextFunction) => {
         '\n'
     );
   };
-
+  console.log(`LOGGER: [${new Date().toISOString()}] ${req.method} ${req.path}`);
   logData(userData, '#LOGGER REQUEST#: User data: ');
   logData(req.body, '#LOGGER REQUEST#: Request body: ');
 
-  const oldSend = res.send;
-  res.send = function (data) {
-    logData(res.getHeaders(), '#LOGGER RESPONSE#: Response headers: ');
-    logData(data, '#LOGGER RESPONSE#: Response data: ');
+  if(res.json){
+    console.log("\n\nJSON\n\n");
+    
+    const oldRes = res.json;
+    res.json = function (data) {
 
-    return oldSend.bind(this, data)();
-  };
+      logData(res.getHeaders(), '#LOGGER RESPONSE#: Response headers: ');
+      logData(data, '#LOGGER RESPONSE#: Response data: ');
+  
+      return oldRes.call(this, data);
+    };
+  } else if (res.send) {
+    console.log("\n\nSEND\n\n");
+
+    const oldRes = res.send;
+    res.send = function (data) {
+      // Log response data for send
+      try {
+        const jsonData = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
+        logData(jsonData, '#LOGGER RESPONSE#: Response data: ');
+      } catch (error) {
+        console.error('#LOGGER RESPONSE#: Error serializing response data:', error);
+      }
+  
+      return oldRes.call(this, data);
+    };
+  }
+
+
+
 
   next();
 };
