@@ -13,7 +13,6 @@ const userRepository = new UserRepository();
 class GameRepository {
   async createGame(data: ICreateGame): Promise<Partial<Game>> {
     try {
-      console.log(`GAMEdata: ${JSON.stringify(data)}`)
       const game = await Game.dao.save(data);
       return game as Game;
     } catch (error) {

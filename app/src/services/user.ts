@@ -27,7 +27,7 @@ class UserService {
         return res.build('BadRequest', `"User" role don't exist`);
       }
       const roleId = role.id;
-      const tokens = 0;
+      const tokens = 10;
       const newUser = await userRepository.createUser({
         email,
         password,

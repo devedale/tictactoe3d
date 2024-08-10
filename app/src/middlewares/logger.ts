@@ -11,50 +11,36 @@ export default (req: Request, res: Response, next: NextFunction) => {
     referrer: req.get('Referrer'),
   };
 
+  // Map the rows of the object to highlight the logger messages
   const logData = (data: object, msg: string): void => {
     console.log(
       '\n' +
-        JSON.stringify(userData, null, 2)
+        JSON.stringify(data, null, 2)
           .split('\n')
           .map((line) => msg + line)
           .join('\n') +
         '\n'
     );
   };
+
   console.log(`LOGGER: [${new Date().toISOString()}] ${req.method} ${req.path}`);
   logData(userData, '#LOGGER REQUEST#: User data: ');
   logData(req.body, '#LOGGER REQUEST#: Request body: ');
-
-  if(res.json){
-    console.log("\n\nJSON\n\n");
+  //Save original send method
+  const originalSend = res.send;
+  //Override res.send method to log response data
+  res.send = function (body) {
+    logData(res.getHeaders(), '#LOGGER RESPONSE#: Response headers: ');
     
-    const oldRes = res.json;
-    res.json = function (data) {
-
-      logData(res.getHeaders(), '#LOGGER RESPONSE#: Response headers: ');
-      logData(data, '#LOGGER RESPONSE#: Response data: ');
-  
-      return oldRes.call(this, data);
-    };
-  } else if (res.send) {
-    console.log("\n\nSEND\n\n");
-
-    const oldRes = res.send;
-    res.send = function (data) {
-      // Log response data for send
-      try {
-        const jsonData = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
-        logData(jsonData, '#LOGGER RESPONSE#: Response data: ');
-      } catch (error) {
-        console.error('#LOGGER RESPONSE#: Error serializing response data:', error);
-      }
-  
-      return oldRes.call(this, data);
-    };
-  }
-
-
-
+    // Check body type in order to have proper logging
+    if (typeof body === 'object') {
+      logData(body, '#LOGGER RESPONSE#: Response data: ');
+    } else {
+      console.log(`#LOGGER RESPONSE#: Response data: ${body}`);
+    }
+    //Call original send with body in proper context
+    return originalSend.call(this, body);
+  };
 
   next();
 };
