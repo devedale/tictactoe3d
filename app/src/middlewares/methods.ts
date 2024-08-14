@@ -4,7 +4,7 @@ import { HttpStatusCode } from '../errors/HttpStatusCode';
 import { ErrorFactory } from '../errors/ErrorFactory';
 
 export default (req: Request, res: Response, next: NextFunction) => {
-  req.validate = (validKeys: string[]) => {
+  req.validateBody = (validKeys: string[]) => {
     const keys = Object.keys(req.body);
 
     for (const key of keys) {
@@ -13,6 +13,20 @@ export default (req: Request, res: Response, next: NextFunction) => {
       }
     }
   };
+  req.validateQuery = (validKeys: string[]) => {
+    const keys = Object.keys(req.query);
+
+    const invalidKeys = keys.reduce((acc: string[], key: string) => {
+        if (!validKeys.includes(key)) {
+            acc.push(key); // Aggiungi la chiave non valida all'accumulatore
+        }
+        return acc;
+    }, []);
+
+    if (invalidKeys.length > 0) {
+        return res.build('BadRequest', `Invalid key(s) in request query: ${invalidKeys.join(', ')}`);
+    }
+};
 
   res.build = <T>(errorType: string, message: string, results?: T) => {
     try {

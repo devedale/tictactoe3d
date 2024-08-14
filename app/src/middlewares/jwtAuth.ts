@@ -15,6 +15,7 @@ const authRSAMiddleware = async (req, res, next) => {
     const decoded = jwt.verify(token, public_key, { algorithms: ['RS256'] });
     req['decodedToken'] = decoded;
     req['userId'] = decoded.userId;
+    req['email'] = decoded.userEmail;
     console.log('\ndecoded', decoded, '\n');
     next();
   } catch (err) {

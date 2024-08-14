@@ -47,7 +47,26 @@ class GameRepository {
       throw new Error('Recupero utenti fallito');
     }
   }
-
+  async getBoardByGameId(id: number): Promise<number[][] | number[][][] | null> {
+    try {
+      if (await this.gameIdExist(id)) {
+        const game = await Game.dao.get(id);
+        return game.board as number[][] | number[][][] | null;
+      }
+    } catch (error) {
+      console.error(error);
+      throw new Error('Board retreival by gameId failed');
+    }
+  }
+  async updateGame(game: Game, data: Partial<ICreateGame>): Promise<0 | 1> {
+    try {
+      console.log('Updating game:', game);
+      return (await Game.dao.update(game, data)) as 0 | 1;
+    } catch (error) {
+      console.error(error);
+      throw new Error('Game updating failed');
+    }
+  }
 }
 
 export { GameRepository };

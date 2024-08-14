@@ -2,107 +2,146 @@ import { Request, Response, NextFunction } from 'express';
 import { GameRepository } from '../database/repository/game';
 import { UserRepository } from '../database/repository/user';
 import { ISError } from '../errors/ErrorFactory';
-import jwt from 'jsonwebtoken';
-import fs from 'fs';
+import BoardService from './board'; 
 import { User } from '../database/models/user';
 
 const userRepository = new UserRepository();
 const gameRepository = new GameRepository();
+const boardService = new BoardService(); 
 
-class GameService {
+class VictoryConditionObserver implements Observer {
+  update(board: Board2D | Board3D): void {
+      if (this.checkVictory(board)) {
+          console.log('Victory condition met!');
+          // Logica per gestire la vittoria, ad esempio aggiornare lo stato della partita
+      }
+  }
+
+  private checkVictory(board: (string | null)[][][] | (string | null)[][]): boolean {
+      // Implementa la logica per verificare se c'è una vittoria
+      // Restituisce true se la vittoria è stata raggiunta
+      return false;
+  }
+}
+
+export class GameService {
+
   async createGame(req: Request, res: Response, next: NextFunction) {
-    req.validate(['player2Mail', 'type', 'startingPlayer']);
-    const { player2Mail, type, startingPlayerIn } = req.body;
+    req.validateBody(['player2Mail', 'type', 'currentPlayer']);
+    const { player2Mail, type, currentPlayer } = req.body;
     const userId1 = parseInt(req['userId']);
   
     try {
-      // Fetch user1 from the repository
       const user1 = await userRepository.getUserById(userId1);
       if (!user1) {
         return res.build('NotFound', 'User not found');
       }
   
-      // Validate the game type
-      if (type !== 'classic' && type !== '3D') {
-        return res.build('BadRequest', 'Game type not specified, choose "classic" or "3D"');
+      if (type.toLowerCase() !== '2d' && type.toLowerCase() !== '3d') {
+        return res.build('BadRequest', 'Game type not specified, choose "classic" or "3d"');
       }
   
-      // Fetch user2 from the repository
       const user2 = await userRepository.getUserByEmail(player2Mail);
       if (!user2) {
         return res.build('NotFound', 'User email not found');
       }
   
-      // Determine the starting player
-      let startingPlayer;
-      if (startingPlayerIn) {
-        if (parseInt(startingPlayerIn) !== 1 && parseInt(startingPlayerIn) !== 2) {
-          return res.build('BadRequest', `Invalid firstMovePlayer field: ${startingPlayerIn}`);
-        }
-        startingPlayer = parseInt(startingPlayerIn);
-      } else {
-        startingPlayer = 1; // Default to player 1 if not specified
+      if (parseInt(currentPlayer) !== 1 && parseInt(currentPlayer) !== 2) {
+        return res.build('BadRequest', `Invalid currentPlayer field: ${currentPlayer}`);
       }
   
-      const userId2 = user2.id;
-      const board = type === 'classic' ?
-        Array(3).fill(null).map(() => Array(3).fill(null)) :
-        Array(4).fill(null).map(() => Array(4).fill(null).map(() => Array(4).fill(null)));
-      const winner = null;
-      const moves = [];
-  
-      // Check if user1 has enough tokens
-      const tokens = parseFloat(user1.tokens); // Parse the tokens to ensure it's a number
-      if (tokens >= 0.5) {
-        // Create a new game
-        const newGame = await gameRepository.createGame({
-          userId1,
-          userId2,
-          type,
-          board,
-          startingPlayer,
-          winner,
-          moves,
-        });
-  
-        // Remaining tokens from user1 and update the repository
-        const updatedTokens = tokens - 0.5;
-        await userRepository.updateUser({ id: userId1, tokens: updatedTokens });
-  
-        res.build('Created', 'Game creation complete', newGame);
-      } else {
+      const tokens = parseFloat(user1.tokens);
+      if (tokens < 0.5) {
         return res.build('BadRequest', 'User does not have enough tokens');
       }
+  
+      const board = boardService.createBoard(type); 
+      const newGame = await gameRepository.createGame({
+        userId1,
+        userId2: user2.id,
+        type: type.toLowerCase(),
+        board,
+        currentPlayer: parseInt(currentPlayer),
+        winner: null,
+        moves: [],
+      });
+  
+      await userRepository.updateUser({ id: userId1, tokens: tokens - 0.5 });
+  
+      if (currentPlayer === '2' && user2.email === 'ai') {
+        await newGame.makeAIMoveIfNeeded(); 
+      }
+  
+      res.build('Created', 'Game creation complete', newGame);
     } catch (err) {
+      console.log(err);
       next(ISError('Error during game creation.', err));
     }
   }
-
+  
   async getGames(req: Request, res: Response, next: NextFunction) {
     try {
       const games = await gameRepository.getGames();
-      if (!users) {
-        return res.build('NotFound', 'Games not found');
+      if (!games || games.length === 0) {
+        return res.build('NotFound', 'No games found');
       }
-
-      res.build('OK', 'Games list', users);
+  
+      res.build('OK', 'Games list', games);
     } catch (err) {
-      next(ISError('Error during games retreival.'), err);
+      console.error(err);
+      next(ISError('Error during games retrieval.', err));
     }
   }
-
-  async makeMove(req: Request, res: Response, next: NextFunction) {
+  
+  async getGamesAndBoards(req: Request, res: Response, next: NextFunction) {
     try {
-      const games = await gameRepository.getGames();
-      if (!users) {
-        return res.build('NotFound', 'Games not found');
+      const games = await gameRepository.getGamesAndBoards();
+      if (!games || games.length === 0) {
+        return res.build('NotFound', 'No games found');
       }
-
-      res.build('OK', 'Games list', users);
+  
+      res.build('OK', 'Games and boards list', games);
     } catch (err) {
-      next(ISError('Error during games retreival.'), err);
+      console.error(err);
+      next(ISError('Error during games retrieval.', err));
     }
   }
-}
+  
+  async makeMove(req: Request, res: Response, next: NextFunction) {
+    const { x, y, z } = req.query; 
+    const gameId = req.params.id;
+    
 
-export default GameService;
+  
+    if (!gameId) {
+      return res.build('BadRequest', 'Game ID is required');
+    }
+  
+    try {
+      const game = await gameRepository.getGameById(gameId);
+      if (!game) {
+        return res.build('NotFound', 'Game not found');
+      }
+      const move = game.type=='3d'?[x, y, z]:[x, y]
+      // Verifica se il movimento è valido e aggiorna il gioco
+      const board = game.board; 
+      console.log("game",JSON.stringify(game))
+      console.log("board",JSON.stringify(board))
+
+      if (boardService.isValidMove(board, move)!==null) {
+        return res.build('BadRequest', 'Invalid move');
+      }
+  
+      const updatedBoard = boardService.setMove(board, move, game.currentPlayer === 1 ? 'X' : 'O');
+      await gameRepository.updateGame(game, { board: updatedBoard, currentPlayer: game.currentPlayer === 1 ? 2 : 1 });
+  
+      res.build('OK', 'Move made successfully', { board: updatedBoard });
+    } catch (err) {
+      console.log(err);
+      next(ISError('Error during move execution.', err));
+    }
+  }
+  }
+  
+  export default GameService;
+  

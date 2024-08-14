@@ -26,14 +26,14 @@ module.exports = {
         allowNull: true, 
       },
       type: {
-        type: Sequelize.ENUM('classic', '3D'),
+        type: Sequelize.ENUM('2d', '3d'),
         allowNull: false,
       },
       board: {
         type: Sequelize.JSON,
         allowNull: false,
       },
-      startingPlayer: {
+      currentPlayer: {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
