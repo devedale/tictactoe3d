@@ -25,7 +25,6 @@ export class Dao<T extends Model> implements DaoI<T> {
     const className = this.model.name;
     return id ? `${className}:${id}` : `${className}:all`;
   }
-
   async get(id: number): Promise<T | null> {
     const cacheKey = this.generateCacheKey(id);
     try {
@@ -33,7 +32,8 @@ export class Dao<T extends Model> implements DaoI<T> {
 
       if (cachedResult) {
         console.log(`Cache HIT!!!\nGet ${cacheKey} with value ${cachedResult}`);
-        return JSON.parse(cachedResult) as T;
+        // Usa il metodo di fabbrica per restituire un'istanza di T
+        return this.createInstance(JSON.parse(cachedResult)) as T;
       }
       const result = await this.model.findByPk(id);
       console.log(`\n\n\n\nCACHEresult${result}\nCACHEawait this.model.findByPk(id)${await this.model.findByPk(id)}`);
@@ -43,12 +43,16 @@ export class Dao<T extends Model> implements DaoI<T> {
         await setInCache(cacheKey, JSON.stringify(result));
       }
 
-      return result;
+      return result as T;
     } catch (error) {
       console.error(`Error in get method: ${error}`);
       throw error;
     }
   }
+  private createInstance(data: any): T {
+    return Object.assign(new this.model(), data);
+  }
+
 
   async getAll(): Promise<T[]> {
     const cacheKey = this.generateCacheKey();
@@ -60,7 +64,7 @@ export class Dao<T extends Model> implements DaoI<T> {
         return JSON.parse(cachedResult) as T[];
       }
 
-      const result = await this.model.findAll();
+      const result = await this.model.findAll() as T[];
 
       if (result && result.length > 0) {
         console.log(`Cache MISS!!!\nSet ${cacheKey} with value ${JSON.stringify(result)}`);
@@ -78,31 +82,43 @@ export class Dao<T extends Model> implements DaoI<T> {
     try {
       const instance = await this.model.create(data);
       await this.invalidateCache(instance);
-      return instance;
+      return instance as T;
     } catch (error) {
       console.error(`Error in create method: ${error}`);
       return null;
     }
   }
-
   async update(instance: T, updateParams: Partial<T>): Promise<0 | 1> {
-    const id = (instance as T).id as number;
+    const id = (instance as any).id as number; 
     if (!id) {
-      console.error('Instance ID is missing');
-      return 0;
+        console.error('Instance ID is missing');
+        return 0;
     }
 
     try {
-      await this.invalidateCache(instance);
-      const [affectedRows] = await this.model.update(updateParams, {
-        where: { id },
-      });
-      return affectedRows ? 1 : 0;
+        console.log(`Updating game with ID: ${id} and params: ${JSON.stringify(updateParams)}`);
+
+        const [affectedRows, updatedRows] = await instance.update(updateParams, {
+            where: { id },
+            returning: true, 
+        });
+
+        console.log("updateResult", updatedRows);
+
+        if (affectedRows === 0) {
+            console.error('No rows were updated. Ensure that the ID is correct and the data is valid.');
+            return 0;
+        }
+        
+        console.log(`Updated game data: ${JSON.stringify(updatedRows)}`);
+
+        await this.invalidateCache(updatedRows[0]); 
+        return affectedRows > 0 ? 1 : 0; 
     } catch (error) {
-      console.error(`Error in update method: ${error}`);
-      return 0;
+        console.error(`Error in update method: ${error}`);
+        return 0;
     }
-  }
+}
 
   async delete(instance: T): Promise<0 | 1> {
     const id = (instance as T).id as number;

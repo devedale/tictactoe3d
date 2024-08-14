@@ -58,10 +58,20 @@ class GameRepository {
       throw new Error('Board retreival by gameId failed');
     }
   }
-  async updateGame(game: Game, data: Partial<ICreateGame>): Promise<0 | 1> {
+  async updateBoard(id: number, board: Board2D | Board3D): Promise<void> {
     try {
-      console.log('Updating game:', game);
-      return (await Game.dao.update(game, data)) as 0 | 1;
+      if (await this.gameIdExist(id)) {
+        const game = await Game.dao.get(id);
+        console.log("game instanceof Game", game instanceof Game); // Dovrebbe restituire true ora
+        console.log("game.constructor.name", game.constructor.name);
+        console.log('Updating board:', board);
+        
+        if (game instanceof Game) { 
+          await game.updateBoard(board);
+        } else {
+          throw new Error("Retrieved object is not a valid game instance");
+        }
+      }
     } catch (error) {
       console.error(error);
       throw new Error('Game updating failed');

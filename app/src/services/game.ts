@@ -9,20 +9,6 @@ const userRepository = new UserRepository();
 const gameRepository = new GameRepository();
 const boardService = new BoardService(); 
 
-class VictoryConditionObserver implements Observer {
-  update(board: Board2D | Board3D): void {
-      if (this.checkVictory(board)) {
-          console.log('Victory condition met!');
-          // Logica per gestire la vittoria, ad esempio aggiornare lo stato della partita
-      }
-  }
-
-  private checkVictory(board: (string | null)[][][] | (string | null)[][]): boolean {
-      // Implementa la logica per verificare se c'è una vittoria
-      // Restituisce true se la vittoria è stata raggiunta
-      return false;
-  }
-}
 
 export class GameService {
 
@@ -110,8 +96,6 @@ export class GameService {
   async makeMove(req: Request, res: Response, next: NextFunction) {
     const { x, y, z } = req.query; 
     const gameId = req.params.id;
-    
-
   
     if (!gameId) {
       return res.build('BadRequest', 'Game ID is required');
@@ -122,18 +106,19 @@ export class GameService {
       if (!game) {
         return res.build('NotFound', 'Game not found');
       }
-      const move = game.type=='3d'?[x, y, z]:[x, y]
-      // Verifica se il movimento è valido e aggiorna il gioco
-      const board = game.board; 
-      console.log("game",JSON.stringify(game))
-      console.log("board",JSON.stringify(board))
 
-      if (boardService.isValidMove(board, move)!==null) {
+      const move = game.type === '3d' ? [x, y, z] : [x, y];
+      const board = game.board; 
+      console.log("game", JSON.stringify(game));
+      console.log("board", JSON.stringify(board));
+
+      if (boardService.isValidMove(board, move) !== null) {
         return res.build('BadRequest', 'Invalid move');
       }
   
       const updatedBoard = boardService.setMove(board, move, game.currentPlayer === 1 ? 'X' : 'O');
-      await gameRepository.updateGame(game, { board: updatedBoard, currentPlayer: game.currentPlayer === 1 ? 2 : 1 });
+      console.log("MAKEMOVE GAME", game, JSON.stringify(game));
+      await gameRepository.updateBoard(game.id,updatedBoard);  
   
       res.build('OK', 'Move made successfully', { board: updatedBoard });
     } catch (err) {
@@ -141,7 +126,7 @@ export class GameService {
       next(ISError('Error during move execution.', err));
     }
   }
-  }
+}
   
   export default GameService;
   
