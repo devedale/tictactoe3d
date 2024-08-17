@@ -1,4 +1,5 @@
 import { User } from '../models/user';
+import { Role } from '../models/role';
 import { RoleRepository } from './role';
 
 interface ICreateUser {
@@ -55,6 +56,31 @@ class UserRepository {
     // MANCA GESTIONE CACHE
     const count = await User.count({ where: { id: userId } });
     return count > 0;
+  }
+
+  async getRoleByUserId(id: number): Promise<Role | null> {
+    try {
+      const user = await this.getUserById(id);
+      if (!user) {
+        throw new Error('Utente non trovato');
+      }
+      const role = await roleRepository.getRoleById(user.roleId);
+      return role as Role | null;
+
+    } catch (error) {
+      console.error(error);
+      throw new Error('Recupero utente per ID fallito');
+    }
+  }
+  async getUserRoleNameById(id: number): Promise<string | null> {
+    try {
+      const role = await this.getRoleByUserId(id);
+      return role.name as string | null;
+
+    } catch (error) {
+      console.error(error);
+      throw new Error('Recupero utente per ID fallito');
+    }
   }
 
   async getUserByEmail(email: string): Promise<User | null> {

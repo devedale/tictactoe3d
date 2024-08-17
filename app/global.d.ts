@@ -5,7 +5,6 @@ type Coordinate3D = [number, number, number];
 type NDimensionalArray = number | NDimensionalArray[];
 type Move = {
   playerId: number;
-  position: Coordinate2D | Coordinate3D;
+  position: Coordinate2D | Coordinate3D | 'RESIGN';
   timestamp: Date;
 };
-

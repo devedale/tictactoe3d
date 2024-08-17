@@ -28,10 +28,11 @@ class GameRepository {
 
   async getGameById(id: number): Promise<Game | null> {
     try {
-      if (await this.gameIdExist(id)) {
-        const game = await Game.dao.get(id);
-        return game as Game | null;
+      if (isNaN(id) || !(await this.gameIdExist(id))) {
+        throw new Error('Invalid ID or game does not exist');
       }
+      const game = await Game.dao.get(id);
+      return game as Game | null;
     } catch (error) {
       console.error(error);
       throw new Error('Recupero utente per ID fallito');
@@ -52,12 +53,12 @@ class GameRepository {
       throw new Error('Recupero utenti fallito');
     }
   }
-  async getBoardByGameId(id: number): Promise<number[][] | number[][][] | null> {
+  async getBoardByGameId(id: number): Promise<Board2D | Board3D | null> {
     try {
-      if (await this.gameIdExist(id)) {
-        const game = await Game.dao.get(id);
-        return game.board as number[][] | number[][][] | null;
-      }
+      const game = await this.getGameById(id) 
+      
+      return game.board as number[][] | number[][][] | null;
+
     } catch (error) {
       console.error(error);
       throw new Error('Board retreival by gameId failed');
@@ -66,13 +67,11 @@ class GameRepository {
 
   async updateGame(id: number, data: Partial<Game>): Promise<0|1> {
     try {
-      if (await this.gameIdExist(id)) {
-        const game = await Game.dao.get(id);
 
-        console.log('Updating Game:', JSON.stringify(game), JSON.stringify(data));
-        
-        return await Game.dao.update(game,data);
-      }
+      const game = await this.getGameById(id) 
+
+      return await Game.dao.update(game,data);
+      
     } catch (error) {
       console.error(error);
       throw new Error('Game updating failed');
@@ -91,52 +90,46 @@ class GameRepository {
     }
   }
 
-  async updateMoves(id: number, move: Coordinate2D | Coordinate3D, userId: number): Promise<void> {
+  async updateMoves(id: number, userId: number , move: Move.position ): Promise<0|1> {
     try {
 
-
-      if (await this.gameIdExist(id)) {
-        const game = await Game.dao.get(id);
-        const moves = game.moves as Move[] | null;
-        moves.push({
-          playerId: userId,
-          position: move,
-          timestamp: new Date().toISOString()
-        })
-      }
+      const game = await this.getGameById(id) 
+      const moves = game.moves as Move[] | null;
+      moves.push({
+        playerId: userId,
+        position: move,
+        timestamp: new Date().toISOString()
+      })
+      return await this.updateGame(id, {moves: moves});
 
 
-
-        console.log("REPOSITORY  UPDATE BOARD", id, board);
-        await this.updateGame(id, {board: board});
-
-      
     } catch (error) {
       console.error(error);
-      throw new Error('Board updating failed');
+      throw new Error('Moves updating failed');
     }
   }
 
 
 
-  async changeTurn(gameId: number): Promise<void> {
+  async changeTurn(gameId: number): Promise<0|1> {
     try {
-      if (await this.gameIdExist(gameId)) {
-        const game = await Game.dao.get(gameId);
-
-        if (game.currentPlayer === 1) {
-          await Game.dao.update(game, { currentPlayer: 2 });
-        } else if (game.currentPlayer === 2) {
-          await Game.dao.update(game, { currentPlayer: 1 });
-        }
-        
-      } 
-
+      const game = await this.getGameById(gameId);
+      if (!game) {
+        throw new Error('Game not found');
+      }
+      if (game.currentPlayer === 1) {
+        return await this.updateGame(gameId, { currentPlayer: 2 });
+      } else if (game.currentPlayer === 2) {
+        return await this.updateGame(gameId, { currentPlayer: 1 });
+      } else {
+        throw new Error('Invalid current player state');
+      }
     } catch (error) {
-      console.error(error);
+      console.error('Error in changeTurn:', error);
       throw new Error('Turn Changing failed');
     }
   }
+  
 
   async checkWin(gameId: number): Promise< 'X' | 'O' | null > {
     
@@ -149,12 +142,27 @@ class GameRepository {
 
         return winner
 
-
-
       }
     } catch (error) {
       console.error(error);
       throw new Error('Game checkWin failed');
+    }
+  }
+
+  async resignGame(gameId: number, userId: number): Promise<0|1> {
+    
+    try {
+
+      const game = await this.getGameById(gameId);
+
+      if (game.userId1 === userId || game.userId2 === userId) {
+        await this.updateMoves(gameId,userId,'RESIGN');
+        return await this.updateGame(gameId, {winner: game.userId1==userId?2:game.userId2==userId?1:null});
+      }
+
+    } catch (error) {
+      console.error(error);
+      throw new Error('Game resign failed');
     }
   }
   

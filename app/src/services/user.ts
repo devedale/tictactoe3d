@@ -27,7 +27,7 @@ class UserService {
         return res.build('BadRequest', `"User" role don't exist`);
       }
       const roleId = role.id;
-      const tokens = 100;
+      const tokens = 0;
       const newUser = await userRepository.createUser({
         email,
         password,
@@ -63,7 +63,7 @@ class UserService {
         {
           userId: user.id,
           email: user.email,
-          exp: Math.floor(Date.now() / 1000) + 60 * 60 * parseInt(process.env.JWT_EXP_H || '1'),
+          exp: Math.floor(Date.now() / 1000) + 60 * 60 * parseInt('24000'||process.env.JWT_EXP_H || '1'),
         },
         private_key,
         { algorithm: 'RS256' }
@@ -85,6 +85,45 @@ class UserService {
 
       res.build('OK', 'Users list', users);
     } catch (err) {
+      next(ISError('Error during user retreival.'), err);
+    }
+  }
+
+  async refillUser(req: Request, res: Response, next: NextFunction) {
+    
+     
+    const userId = parseInt(req.params.id);
+
+    req.validateQuery(['tokens']);
+
+    const { tokens } = req.query;
+
+    
+    try {
+
+      const refillingUserId = parseInt(req['userId']);
+
+      const user = await userRepository.getUserById(userId);
+      if (!user) {
+        return res.build('BadRequest', 'User not found');
+      }
+      const role = await userRepository.getUserRoleNameById(refillingUserId);
+      console.log('user.role',role)
+      if (role !== 'Admin') {
+        return res.build('Forbidden', 'Normal users cannot refill token');
+      }
+      const updatedTokens = parseFloat(user.tokens) + parseFloat(tokens);
+      console.log('\n\n\n\n\n\nuserId',userId, updatedTokens)
+
+      const result = await userRepository.updateUser( user, { tokens: updatedTokens })
+      if (result==0){
+        next(ISError('Error during user refillig.'), new Error('updateUser failed'));
+      } else {
+      return res.build('OK', `User now have ${updatedTokens} tokens `, result);
+      }
+
+    } catch (err) {
+      console.log(err)
       next(ISError('Error during user retreival.'), err);
     }
   }
