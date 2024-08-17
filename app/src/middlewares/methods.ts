@@ -18,7 +18,7 @@ export default (req: Request, res: Response, next: NextFunction) => {
 
     const invalidKeys = keys.reduce((acc: string[], key: string) => {
         if (!validKeys.includes(key)) {
-            acc.push(key); // Aggiungi la chiave non valida all'accumulatore
+            acc.push(key); 
         }
         return acc;
     }, []);

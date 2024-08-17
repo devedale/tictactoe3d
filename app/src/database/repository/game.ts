@@ -1,5 +1,10 @@
 import { Game } from '../models/game';
 import { UserRepository } from './user';
+import BoardService from '../../services/board'
+
+const boardService = new BoardService();
+
+
 
 interface ICreateGame {
   userId1!: number;
@@ -58,25 +63,101 @@ class GameRepository {
       throw new Error('Board retreival by gameId failed');
     }
   }
-  async updateBoard(id: number, board: Board2D | Board3D): Promise<void> {
+
+  async updateGame(id: number, data: Partial<Game>): Promise<0|1> {
     try {
       if (await this.gameIdExist(id)) {
         const game = await Game.dao.get(id);
-        console.log("game instanceof Game", game instanceof Game); // Dovrebbe restituire true ora
-        console.log("game.constructor.name", game.constructor.name);
-        console.log('Updating board:', board);
+
+        console.log('Updating Game:', JSON.stringify(game), JSON.stringify(data));
         
-        if (game instanceof Game) { 
-          await game.updateBoard(board);
-        } else {
-          throw new Error("Retrieved object is not a valid game instance");
-        }
+        return await Game.dao.update(game,data);
       }
     } catch (error) {
       console.error(error);
       throw new Error('Game updating failed');
     }
   }
+
+  async updateBoard(id: number, board: Board2D | Board3D): Promise<0|1> {
+    try {
+        console.log("REPOSITORY  UPDATE BOARD", id, board);
+        return await this.updateGame(id, {board: board});
+
+      
+    } catch (error) {
+      console.error(error);
+      throw new Error('Board updating failed');
+    }
+  }
+
+  async updateMoves(id: number, move: Coordinate2D | Coordinate3D, userId: number): Promise<void> {
+    try {
+
+
+      if (await this.gameIdExist(id)) {
+        const game = await Game.dao.get(id);
+        const moves = game.moves as Move[] | null;
+        moves.push({
+          playerId: userId,
+          position: move,
+          timestamp: new Date().toISOString()
+        })
+      }
+
+
+
+        console.log("REPOSITORY  UPDATE BOARD", id, board);
+        await this.updateGame(id, {board: board});
+
+      
+    } catch (error) {
+      console.error(error);
+      throw new Error('Board updating failed');
+    }
+  }
+
+
+
+  async changeTurn(gameId: number): Promise<void> {
+    try {
+      if (await this.gameIdExist(gameId)) {
+        const game = await Game.dao.get(gameId);
+
+        if (game.currentPlayer === 1) {
+          await Game.dao.update(game, { currentPlayer: 2 });
+        } else if (game.currentPlayer === 2) {
+          await Game.dao.update(game, { currentPlayer: 1 });
+        }
+        
+      } 
+
+    } catch (error) {
+      console.error(error);
+      throw new Error('Turn Changing failed');
+    }
+  }
+
+  async checkWin(gameId: number): Promise< 'X' | 'O' | null > {
+    
+    try {
+      if (await this.gameIdExist(gameId)) {
+        const game = await Game.dao.get(gameId);
+
+
+        const winner = await boardService.checkVictory(game.board)
+
+        return winner
+
+
+
+      }
+    } catch (error) {
+      console.error(error);
+      throw new Error('Game checkWin failed');
+    }
+  }
+  
 }
 
 export { GameRepository };

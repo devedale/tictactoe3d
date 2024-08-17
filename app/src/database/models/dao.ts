@@ -96,9 +96,7 @@ export class Dao<T extends Model> implements DaoI<T> {
     }
 
     try {
-        console.log(`Updating game with ID: ${id} and params: ${JSON.stringify(updateParams)}`);
-
-        const [affectedRows, updatedRows] = await instance.update(updateParams, {
+        const [affectedRows, updatedRows] = await this.model.update(updateParams, {
             where: { id },
             returning: true, 
         });
