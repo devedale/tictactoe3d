@@ -94,9 +94,12 @@ class GameRepository {
     try {
 
       const game = await this.getGameById(id) 
+      const user = await userRepository.getUserById(userId)
+      console.log("UPDATE MOVE")
       const moves = game.moves as Move[] | null;
       moves.push({
         playerId: userId,
+        playerEmail: user.email,
         position: move,
         timestamp: new Date().toISOString()
       })
@@ -104,7 +107,7 @@ class GameRepository {
 
 
     } catch (error) {
-      console.error(error);
+      console.error(error); 
       throw new Error('Moves updating failed');
     }
   }

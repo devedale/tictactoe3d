@@ -102,6 +102,8 @@ class BoardService {
       return board2D;
     }
   }
+
+
   public async getCurrentAndOpponentPlayers(game) {
     const players = [game.userId1, game.userId2];
     const currentPlayerId = players[game.currentPlayer - 1];
@@ -111,6 +113,7 @@ class BoardService {
     console.log("Current players", currentPlayerId, opponentId);
     return { currentPlayerId, opponentId };
   }
+
 
   // Function to check if a cell is empty in the board
   public async isEmptyCell(board: Board2D | Board3D, coordinates: Coordinate2D | Coordinate3D): Promise<boolean> {

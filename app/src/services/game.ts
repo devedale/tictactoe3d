@@ -4,6 +4,8 @@ import { UserRepository } from '../database/repository/user';
 import { ISError } from '../errors/ErrorFactory';
 import BoardService from './board'; 
 import { User } from '../database/models/user';
+import ExportService from './export';
+
 
 const userRepository = new UserRepository();
 const gameRepository = new GameRepository();
@@ -283,8 +285,9 @@ export class GameService {
 
       const players = [user1.email, user2.email];
       const currentPlayerId = players[game.currentPlayer-1];
+      const gameStatus = { gameId, players, currentPlayer: game.winner==null?currentPlayerId:'GAME OVER', winner: game.winner==0?'TIE':players[game.winner-1], board: game.board, moves: game.moves }
 
-      return res.build('OK', 'Game status', { gameId, currentPlayer: currentPlayerId, winner: game.winner, moves: game.moves });
+      return res.build('OK', 'Game status', gameStatus);
 
 
     } catch (err) {
@@ -308,6 +311,7 @@ export class GameService {
         if (!game) {
           return res.build('NotFound', 'Game not found');
         }
+        
         if (startDate || endDate) {
           const start = startDate ? parseDate(startDate as string) : undefined;
           const end = endDate ? parseDate(endDate as string) : undefined;
@@ -323,12 +327,42 @@ export class GameService {
             const moveDate = new Date(e.timestamp);
             return (!start || moveDate >= start) && (!end || moveDate <= end);
           });
-          return res.build('OK', 'Moves list', gameFilteredMoves);
+          
+          if (format !== undefined) {
+            const methodName = `generate${format.charAt(0).toUpperCase() + format.slice(1)}`;
+            const exportService = new ExportService(gameFilteredMoves).movesHistoryExportService;
+    
+            if (typeof exportService[methodName] === 'function') {
+              const fileBuffer = await exportService[methodName]();
+              return res.sendFile(fileBuffer, format);
+            } else {
+              return res.build('BadRequest', 'Formato non valido');
+            }
+          }
+    
+          if (format === undefined) {
+            return res.build('OK', 'Moves list', gameFilteredMoves);
+          }
+          
+
 
         }
-        return res.build('OK', 'Moves list', game.moves);
 
-
+        if (format !== undefined) {
+          const methodName = `generate${format.charAt(0).toUpperCase() + format.slice(1)}`;
+          const exportService = new ExportService(game.moves).movesHistoryExportService;
+  
+          if (typeof exportService[methodName] === 'function') {
+            const fileBuffer = await exportService[methodName]();
+            return res.sendFile(fileBuffer, format);
+          } else {
+            return res.build('BadRequest', 'Formato non valido');
+          }
+        }
+  
+        if (format === undefined) {
+          return res.build('OK', 'Moves list', game.moves);
+        }
   
     } catch (err) {
       next(ISError('Error during gameMoveHistory retreival.', err));
@@ -336,6 +370,28 @@ export class GameService {
   }
   async rankList(req: Request, res: Response, next: NextFunction) {
     try{
+
+      const users = await userRepository.getUsers();
+      const games = await gameRepository.getGames();
+      const rankList = users.map((user) => {
+        const userGames = games.filter((game) => (game.userId1 === user.id || game.userId2 === user.id)&&game.winner != null);
+        const wins = userGames.filter((game) => game.winner === user.id ).length;
+        const winsForResign = userGames.filter((game) =>  game.moves.filter((move)=>move.playerId!=user.id&&move.position=='RESIGN')!=0).length;
+        const losses = userGames.filter((game) => game.winner!== null && game.winner!== user.id).length;
+        const lossesForResign = userGames.filter((game) => game.moves.filter((move)=>move.playerId==user.id&&move.position=='RESIGN')!=0).length;
+
+        return {
+          userId: user.id,
+          email: user.email,
+          wins,
+          winsForResign,
+          losses,
+          lossesForResign,
+          totalGames: userGames.length,
+          winPercentage: (wins / (wins + losses)) * 100,
+        };
+      });
+      return res.build('OK', 'RankList:', rankList);
 
     } catch (err) {
       next(ISError('Error during rankList retreival.', err));
