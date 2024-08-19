@@ -1,10 +1,11 @@
 class BoardService {
-  // Function to determine the size of the board based on the type (2D or 3D)
+
+  private CPU_METHOD_NAME = 'cpuHardLogic';
+
   private SIZE(type: '2d' | '3d'): number {
     return type.toLowerCase() === '3d' ? 4 : 3;
   }
 
-  // Function to create a game board based on the specified type
   public async createBoard(type: '2d' | '3d'): Promise<Board2D | Board3D> {
     const size = this.SIZE(type);
     if (type.toLowerCase() === '2d') {
@@ -18,7 +19,6 @@ class BoardService {
     }
   }
 
-  // Function to get all indices of the board in a multi-dimensional array
   public async getAllIndices(arr: any[], currentPath: number[] = []): Promise<number[][]> {
     if (!Array.isArray(arr)) {
       return [currentPath];
@@ -32,7 +32,6 @@ class BoardService {
     }
   }
 
-  // Function to get the indices of all null (empty) cells in the board
   public async getNullIndices(arr: any[], currentPath: number[] = []): Promise<number[][]> {
     if (!Array.isArray(arr)) {
       return arr === null ? [currentPath] : [];
@@ -46,19 +45,108 @@ class BoardService {
     }
   }
 
-  // Function to determine the CPU's move based on the available null indices
-  public async cpuMove(arr: any[], currentPath: number[] = [], methodName = 'cpuEasyLogic'): Promise<number[]> {
-    const nullIndices = await this.getNullIndices(arr, currentPath);
-    return this[methodName](nullIndices);
+  public async cpuMove(board: Board2D | Board3D, currentPlayer: 'X' | 'O', methodName: string = this.CPU_METHOD_NAME): Promise<number[]> {
+    return this[methodName](board, currentPlayer);
   }
 
-  // Basic CPU logic to choose the first available move
-  public async cpuEasyLogic(nullIndices: number[][]): Promise<number[]> {
-    console.log("cpuEasyLogic", nullIndices[0], nullIndices);
+  public async cpuEasyLogic(board: Board2D | Board3D, currentPlayer?: 'X' | 'O'): Promise<number[]> {
+    const nullIndices = await this.getNullIndices(board);
+    if (nullIndices.length === 0) {
+      throw new Error("No available moves.");
+    }
     return nullIndices[0];
   }
 
-  // Function to check if a move is valid based on the current board and coordinates
+  public async cpuRandomLogic(board: Board2D | Board3D, currentPlayer?: 'X' | 'O'): Promise<number[]> {
+    const nullIndices = await this.getNullIndices(board);
+  
+    if (nullIndices.length === 0) {
+      throw new Error("No available moves.");
+    }
+  
+    const randomIndex = Math.floor(Math.random() * nullIndices.length);
+    return nullIndices[randomIndex];
+  }
+
+  public async cpuHardLogic(board: Board2D | Board3D, currentPlayer: 'X' | 'O'): Promise<number[]> {
+    const mcts = new this.MCTS(this, board, currentPlayer, 1000); 
+    return await mcts.run();
+  }
+
+  public async cpuDynamicLogic(board: Board2D | Board3D, currentPlayer: 'X' | 'O'): Promise<number[]> {
+    const memo: Record<string, number> = {};
+    const startTime = Date.now();
+  
+    const boardToString = (board: Board2D | Board3D): string => JSON.stringify(board);
+  
+    const valuateMoveDynamicProgramming = async (board: Board2D | Board3D, currentPlayer: 'X' | 'O'): Promise<number> => {
+      const boardKey = `${boardToString(board)}-${currentPlayer}`;
+      if (memo[boardKey] !== undefined) {
+        return memo[boardKey];
+      }
+  
+      const winner = await this.checkVictory(board);
+      if (winner !== null) {
+        return winner === 'O' ? 1 : -1;
+      }
+  
+      const nullIndices = await this.getNullIndices(board);
+      if (nullIndices.length === 0) {
+        return 0;
+      }
+  
+      let bestScore = null;
+  
+      for (let i = 0; i < nullIndices.length; i++) {
+        const coordinates = nullIndices[i];
+  
+        const boardCopy = JSON.parse(JSON.stringify(board));
+  
+        const newBoard = await this.setMove(boardCopy, coordinates, currentPlayer);
+  
+        if (Date.now() - startTime > 5000) {
+          return null; 
+        }
+  
+        const score = await valuateMoveDynamicProgramming(newBoard, currentPlayer === 'X' ? 'O' : 'X');
+  
+        if (bestScore === null || (currentPlayer === 'O' && score > bestScore) || (currentPlayer === 'X' && score < bestScore)) {
+          bestScore = score;
+        }
+      }
+  
+      memo[boardKey] = bestScore;
+      return bestScore;
+    };
+  
+    const nullIndices = await this.getNullIndices(board);
+    let bestMove = nullIndices[0];
+    let bestScore = null;
+  
+    for (let i = 0; i < nullIndices.length; i++) {
+      const coordinates = nullIndices[i];
+  
+      const boardCopy = JSON.parse(JSON.stringify(board));
+  
+      const newBoard = await this.setMove(boardCopy, coordinates, currentPlayer);
+  
+      // Check for timeout (this alghoritm works fine ONLY for 3x3 and low dimensions so this timeout avoids starvation)
+      if (Date.now() - startTime > 5000) {
+        const randomIndex = Math.floor(Math.random() * nullIndices.length);
+        return nullIndices[randomIndex];
+      }
+  
+      const score = await valuateMoveDynamicProgramming(newBoard, currentPlayer === 'X' ? 'O' : 'X');
+  
+      if (bestScore === null || (currentPlayer === 'O' && score > bestScore) || (currentPlayer === 'X' && score < bestScore)) {
+        bestMove = coordinates;
+        bestScore = score;
+      }
+    }
+  
+    return bestMove;
+  }
+  
   public async valueInBoardCoordinates(board: Board2D | Board3D, coordinates: Coordinate2D | Coordinate3D): Promise<string | null | undefined> {
     if (Array.isArray(board[0][0])) {
       const [x, y, z] = coordinates as Coordinate3D;
@@ -68,7 +156,7 @@ class BoardService {
           z >= 0 && z < board3D[x][y].length) {
         return board3D[x][y][z];
       } else {
-        return undefined; // Coordinates out of bounds
+        return undefined; 
       }
     } else {
       const [x, y] = coordinates as Coordinate2D;
@@ -77,45 +165,37 @@ class BoardService {
           y >= 0 && y < board2D[x].length) {
         return board2D[x][y];
       } else {
-        return undefined; // Coordinates out of bounds
+        return undefined; 
       }
     }
   }
 
-  // Function to set a move on the board if it is valid
   public async setMove(board: Board2D | Board3D, coordinates: Coordinate2D | Coordinate3D, player: string): Promise<Board2D | Board3D> {
     const isValidMove = await this.valueInBoardCoordinates(board, coordinates);
     if (isValidMove !== null) {
-      console.log(`\n\n\nInvalid move attempt: ${coordinates} on board: ${JSON.stringify(board)}\n\n\n`);
-      return board; // Move is invalid, return the unchanged board
+      return board; 
     }
 
     if (Array.isArray(board[0][0])) {
       const [x, y, z] = coordinates as Coordinate3D;
       const board3D = board as Board3D;
-      board3D[x][y][z] = player; // Set the position to the player's identifier
+      board3D[x][y][z] = player; 
       return board3D;
     } else {
       const [x, y] = coordinates as Coordinate2D;
       const board2D = board as Board2D;
-      board2D[x][y] = player; // Set the position to the player's identifier
+      board2D[x][y] = player; 
       return board2D;
     }
   }
 
-
-  public async getCurrentAndOpponentPlayers(game) {
+  public async getCurrentAndOpponentPlayers(game): Promise<{ currentPlayerId: string, opponentId: string }> {
     const players = [game.userId1, game.userId2];
     const currentPlayerId = players[game.currentPlayer - 1];
     const opponentId = players.find(p => p !== currentPlayerId);
-    console.log("\n\n\n\n\n\n\n\ngetCurrentAndOpponentPlayers_game\n", game);
-    console.log("Players ids", game.userId1, game.userId2);
-    console.log("Current players", currentPlayerId, opponentId);
     return { currentPlayerId, opponentId };
   }
 
-
-  // Function to check if a cell is empty in the board
   public async isEmptyCell(board: Board2D | Board3D, coordinates: Coordinate2D | Coordinate3D): Promise<boolean> {
     if (Array.isArray(board[0][0])) {
       const [x, y, z] = coordinates as Coordinate3D;
@@ -133,9 +213,7 @@ class BoardService {
     }
   }
 
-  // Function to check for victory on the board
   public async checkVictory(board: Board2D | Board3D): Promise<string | null> {
-    console.log("\n\n\n\nCheckVictory\n\n\n\n");
     const size = board.length;
 
     const checkLine = (line: (string | null)[]): string | null => {
@@ -145,19 +223,17 @@ class BoardService {
     const getLines = (board: Board3D): Board2D => {
       let lines: Board2D = [];
 
-      // Add rows, columns, and diagonals in each level
       board.forEach((level) => {
         lines = lines.concat(level);
         lines = lines.concat(level[0].map((_, colIndex) => level.map(row => row[colIndex])));
       });
 
-      // Add 2D diagonals
       board.forEach((level) => {
         lines.push(level.map((row, index) => row[index]));
         lines.push(level.map((row, index) => row[size - 1 - index]));
       });
 
-      // Add 3D diagonals
+
       for (let i = 0; i < size; i++) {
         lines.push(board.map(level => level[i][i]));
         lines.push(board.map(level => level[i][size - 1 - i]));
@@ -173,24 +249,93 @@ class BoardService {
     const getLines2D = (board: Board2D): Board2D => {
       let lines: Board2D = [];
 
-      // Add rows and columns
+
       lines = lines.concat(board);
       lines = lines.concat(board[0].map((_, colIndex) => board.map(row => row[colIndex])));
 
-      // Add diagonals
+
       lines.push(board.map((row, index) => row[index]));
       lines.push(board.map((row, index) => row[size - 1 - index]));
 
       return lines;
     };
 
-    // Get lines to check based on board type
+
     const lines = Array.isArray(board[0][0]) ? getLines(board as Board3D) : getLines2D(board as Board2D);
 
-    // Determine if there is a winner
+
     const winner = lines.map(checkLine).filter(result => result !== null)[0];
 
     return winner || null;
+  }
+
+
+  private MCTS = class MCTS {
+    private boardService: BoardService;
+    private board: Board2D | Board3D;
+    private player: 'X' | 'O';
+    private simulations: number;
+
+    constructor(boardService: BoardService, board: Board2D | Board3D, player: 'X' | 'O', simulations: number) {
+      this.boardService = boardService;
+      this.board = board;
+      this.player = player;
+      this.simulations = simulations;
+    }
+
+    private async simulate(board: Board2D | Board3D, currentPlayer: 'X' | 'O'): Promise<number> {
+      const nullIndices = await this.boardService.getNullIndices(board);
+      if (nullIndices.length === 0) {
+        return 0; 
+      }
+      const randomIndex = Math.floor(Math.random() * nullIndices.length);
+      const randomMove = nullIndices[randomIndex];
+      const newBoard = await this.boardService.setMove(JSON.parse(JSON.stringify(board)), randomMove, currentPlayer);
+      const winner = await this.boardService.checkVictory(newBoard);
+      if (winner === this.player) {
+        return 1; 
+      } else if (winner) {
+        return -1; 
+      } else {
+        return await this.simulate(newBoard, currentPlayer === 'X' ? 'O' : 'X');
+      }
+    }
+
+    public async run(): Promise<number[]> {
+      const moves = await this.boardService.getNullIndices(this.board);
+      const scores: Map<string, number> = new Map();
+      const moveCounts: Map<string, number> = new Map();
+
+      for (const move of moves) {
+        scores.set(JSON.stringify(move), 0);
+        moveCounts.set(JSON.stringify(move), 0);
+      }
+
+      for (let i = 0; i < this.simulations; i++) {
+        const move = moves[Math.floor(Math.random() * moves.length)];
+        const boardCopy = JSON.parse(JSON.stringify(this.board));
+        const newBoard = await this.boardService.setMove(boardCopy, move, this.player);
+        const result = await this.simulate(newBoard, this.player === 'X' ? 'O' : 'X');
+        const moveKey = JSON.stringify(move);
+        const currentScore = scores.get(moveKey) || 0;
+        const currentCount = moveCounts.get(moveKey) || 0;
+        scores.set(moveKey, currentScore + result);
+        moveCounts.set(moveKey, currentCount + 1);
+      }
+
+      let bestMove: number[] = moves[0];
+      let bestScore = -Infinity;
+      for (const move of moves) {
+        const moveKey = JSON.stringify(move);
+        const averageScore = (scores.get(moveKey) || 0) / (moveCounts.get(moveKey) || 1);
+        if (averageScore > bestScore) {
+          bestScore = averageScore;
+          bestMove = move;
+        }
+      }
+
+      return bestMove;
+    }
   }
 }
 

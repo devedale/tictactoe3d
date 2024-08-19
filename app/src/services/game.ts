@@ -76,7 +76,7 @@ export class GameService {
   
   
       if (player2Mail.toLowerCase() === 'ai' && parseInt(currentPlayer) === 2) {
-        const cpuMove = await boardService.cpuMove(board);
+        const cpuMove = await boardService.cpuMove(board,'O');
         const updatedBoard = await boardService.setMove(board, cpuMove, 'O'); // AI always uses 'O'
         await gameRepository.updateBoard(newGame.id, updatedBoard);
         await gameRepository.updateMoves(newGame.id, user2.id, cpuMove);
@@ -206,7 +206,7 @@ export class GameService {
 
       // If the opponent is AI, make the AI move
       if (user2.email === 'ai') {
-        const cpuMove = await boardService.cpuMove(updatedBoard);
+        const cpuMove = await boardService.cpuMove(updatedBoard,'O');
         const updatedBoardCpu = await boardService.setMove(updatedBoard, cpuMove, opponentMarker);
         await gameRepository.updateMoves(game.id,game.userId2,cpuMove)
         const resultCpu = await gameRepository.updateBoard(game.id, updatedBoardCpu, game.userId2);
@@ -233,6 +233,7 @@ export class GameService {
         return res.build('OK', 'Move made successfully, waiting for challenger move', { result, board: updatedBoard });
       }
     } catch (err) {
+      console.log(err)
       next(ISError('Error during game processing.', err));
     }
   }

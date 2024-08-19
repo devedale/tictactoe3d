@@ -35,7 +35,7 @@ class GameRepository {
       return game as Game | null;
     } catch (error) {
       console.error(error);
-      throw new Error('Recupero utente per ID fallito');
+      throw new Error('Repository GameByIdFailed');
     }
   }
   async gameIdExist(id: number): Promise<boolean> {
