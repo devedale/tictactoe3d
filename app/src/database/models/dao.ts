@@ -8,23 +8,33 @@ const deleteFromCache = redisClient.deleteFromCache;
 interface DaoI<T extends Model> {
   get(id: number): Promise<T | null>;
   getAll(): Promise<T[]>;
-  save(instance: T): Promise<boolean>;
+  save(instance: Partial<T>): Promise<T | null>;
   create(data: Partial<T>): Promise<T | null>;
   update(instance: T, updateParams: Optional<T, keyof T>): Promise<boolean>;
   delete(instance: T): Promise<boolean>;
 }
 
 export class Dao<T extends Model> implements DaoI<T> {
+  private static instances: Map<ModelCtor<any>, Dao<any>> = new Map();
+
   private model: ModelCtor<T>;
 
-  constructor(model: ModelCtor<T>) {
+  private constructor(model: ModelCtor<T>) {
     this.model = model;
+  }
+
+  public static getInstance<T extends Model>(model: ModelCtor<T>): Dao<T> {
+    if (!this.instances.has(model)) {
+      this.instances.set(model, new Dao(model));
+    }
+    return this.instances.get(model) as Dao<T>;
   }
 
   private generateCacheKey(id?: number): string {
     const className = this.model.name;
     return id ? `${className}:${id}` : `${className}:all`;
   }
+
   async get(id: number): Promise<T | null> {
     const cacheKey = this.generateCacheKey(id);
     try {
@@ -32,11 +42,10 @@ export class Dao<T extends Model> implements DaoI<T> {
 
       if (cachedResult) {
         console.log(`Cache HIT!!!\nGet ${cacheKey} with value ${cachedResult}`);
-        // Usa il metodo di fabbrica per restituire un'istanza di T
         return this.createInstance(JSON.parse(cachedResult)) as T;
       }
+
       const result = await this.model.findByPk(id);
-      console.log(`\n\n\n\nCACHEresult${result}\nCACHEawait this.model.findByPk(id)${await this.model.findByPk(id)}`);
 
       if (result) {
         console.log(`Cache MISS!!!\nSet ${cacheKey} with value ${JSON.stringify(result)}`);
@@ -49,10 +58,10 @@ export class Dao<T extends Model> implements DaoI<T> {
       throw error;
     }
   }
+
   private createInstance(data: any): T {
     return Object.assign(new this.model(), data);
   }
-
 
   async getAll(): Promise<T[]> {
     const cacheKey = this.generateCacheKey();
@@ -84,54 +93,51 @@ export class Dao<T extends Model> implements DaoI<T> {
       await this.invalidateCache(instance);
       return instance as T;
     } catch (error) {
-      console.error(`Error in create method: ${error}`);
+      console.error(`Error in save method: ${error}`);
       return null;
     }
   }
-  async update(instance: T, updateParams: Partial<T>): Promise<0 | 1> {
+
+  async update(instance: T, updateParams: Partial<T>): Promise<boolean> {
     const id = (instance as any).id as number; 
     if (!id) {
-        console.error('Instance ID is missing');
-        return 0;
+      console.error('Instance ID is missing');
+      return false;
     }
 
     try {
-        const [affectedRows, updatedRows] = await this.model.update(updateParams, {
-            where: { id },
-            returning: true, 
-        });
+      const [affectedRows, updatedRows] = await this.model.update(updateParams, {
+        where: { id },
+        returning: true,
+      });
 
-        console.log("updateResult", updatedRows);
+      if (affectedRows === 0) {
+        console.error('No rows were updated. Ensure that the ID is correct and the data is valid.');
+        return false;
+      }
 
-        if (affectedRows === 0) {
-            console.error('No rows were updated. Ensure that the ID is correct and the data is valid.');
-            return 0;
-        }
-        
-        console.log(`Updated game data: ${JSON.stringify(updatedRows)}`);
-
-        await this.invalidateCache(updatedRows[0]); 
-        return affectedRows > 0 ? 1 : 0; 
+      await this.invalidateCache(updatedRows[0]);
+      return affectedRows > 0;
     } catch (error) {
-        console.error(`Error in update method: ${error}`);
-        return 0;
+      console.error(`Error in update method: ${error}`);
+      return false;
     }
-}
+  }
 
-  async delete(instance: T): Promise<0 | 1> {
+  async delete(instance: T): Promise<boolean> {
     const id = (instance as T).id as number;
     if (!id) {
       console.error('Instance ID is missing');
-      return 0;
+      return false;
     }
 
     try {
       await this.invalidateCache(instance);
       const result = await this.model.destroy({ where: { id } });
-      return result ? 1 : 0;
+      return result > 0;
     } catch (error) {
       console.error(`Error in delete method: ${error}`);
-      return 0;
+      return false;
     }
   }
 

@@ -103,6 +103,18 @@ class UserService {
 
       const refillingUserId = parseInt(req['userId']);
 
+
+      if (isNaN(userId)) {
+        return res.build('BadRequest', 'User ID is required and must be a valid number');
+      }
+      if (!(await userRepository.userIdExist(userId))) {
+        return res.build('NotFound', 'User not found');
+      }
+
+
+
+
+
       const user = await userRepository.getUserById(userId);
       if (!user) {
         return res.build('BadRequest', 'User not found');

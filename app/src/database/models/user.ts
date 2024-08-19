@@ -68,7 +68,7 @@ class User extends Model {
       }
     );
 
-    this.dao = new Dao<User>(this);
+    this.dao = Dao.getInstance(User);
   }
 
   public comparePassword(candidatePassword: string): Promise<boolean> {

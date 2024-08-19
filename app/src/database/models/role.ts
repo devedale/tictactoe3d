@@ -34,7 +34,7 @@ class Role extends Model {
       }
     );
 
-    this.dao = new Dao<Role>(this);
+    this.dao = Dao.getInstance(Role);
   }
 }
 

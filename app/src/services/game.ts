@@ -128,15 +128,17 @@ export class GameService {
     const { x, y, z } = req.query;
     const gameId = parseInt(req.params.id);
 
-    if (!gameId || isNaN(gameId)) {
-        return res.build('BadRequest', 'Game ID is required and must be a valid number');
-    }
+
   
     try {
-      const game = await gameRepository.getGameById(gameId);
-      if (!game) {
+      if (isNaN(gameId)) {
+        return res.build('BadRequest', 'Game ID is required and must be a valid number');
+      }
+      if (!(await gameRepository.gameIdExist(gameId))) {
         return res.build('NotFound', 'Game not found');
       }
+      const game = await gameRepository.getGameById(gameId);
+
   
       if (game.winner !== null) {
         return res.build('BadRequest', `this game already finished with winner player ${game.winner} (${parseInt(game.winner)===1?'X':parseInt(game.winner)===2?'O':'its a tie'})`);
@@ -241,14 +243,13 @@ export class GameService {
     try{
       const gameId = parseInt(req.params.id);
 
-      if (!gameId || isNaN(gameId)) {
+      if (isNaN(gameId)) {
         return res.build('BadRequest', 'Game ID is required and must be a valid number');
       }
-
-      const game = await gameRepository.getGameById(gameId);
-      if (!game) {
+      if (!(await gameRepository.gameIdExist(gameId))) {
         return res.build('NotFound', 'Game not found');
       }
+      const game = await gameRepository.getGameById(gameId);
 
       const user1 = await userRepository.getUserById(game.userId1);
       const user2 = await userRepository.getUserById(game.userId2);
@@ -272,14 +273,13 @@ export class GameService {
     try{
       const gameId = parseInt(req.params.id);
 
-      if (!gameId || isNaN(gameId)) {
+      if (isNaN(gameId)) {
         return res.build('BadRequest', 'Game ID is required and must be a valid number');
       }
-
-      const game = await gameRepository.getGameById(gameId);
-      if (!game) {
+      if (!(await gameRepository.gameIdExist(gameId))) {
         return res.build('NotFound', 'Game not found');
       }
+      const game = await gameRepository.getGameById(gameId);
 
       const user1 = await userRepository.getUserById(game.userId1);
       const user2 = await userRepository.getUserById(game.userId2);
@@ -308,11 +308,14 @@ export class GameService {
         if (!['json', 'pdf', undefined].includes(format)) {
           return res.build('BadRequest', 'Formato non valido');
         }
-        const game = await gameRepository.getGameById(gameId);
-        if (!game) {
+
+        if (isNaN(gameId)) {
+          return res.build('BadRequest', 'Game ID is required and must be a valid number');
+        }
+        if (!(await gameRepository.gameIdExist(gameId))) {
           return res.build('NotFound', 'Game not found');
         }
-        
+        const game = await gameRepository.getGameById(gameId);
         if (startDate || endDate) {
           const start = startDate ? parseDate(startDate as string) : undefined;
           const end = endDate ? parseDate(endDate as string) : undefined;
@@ -371,7 +374,7 @@ export class GameService {
   }
   async rankList(req: Request, res: Response, next: NextFunction) {
     try{
-
+      
       const users = await userRepository.getUsers();
       const games = await gameRepository.getGames();
       const rankList = users.map((user) => {

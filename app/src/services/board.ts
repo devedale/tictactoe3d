@@ -1,6 +1,6 @@
 class BoardService {
 
-  private CPU_METHOD_NAME = 'cpuHardLogic';
+  private CPU_METHOD_NAME = 'cpuDynamicLogic';
 
   private SIZE(type: '2d' | '3d'): number {
     return type.toLowerCase() === '3d' ? 4 : 3;

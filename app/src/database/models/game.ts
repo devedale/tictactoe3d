@@ -84,7 +84,7 @@ class Game extends Model {
             timestamps: true,
         });
 
-        this.dao = new Dao<Game>(this); // Initialize the Data Access Object for this model.
+        this.dao = Dao.getInstance(Game); 
     }
 
     // Static method to set up associations with other models.
