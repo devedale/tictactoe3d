@@ -1,8 +1,15 @@
 import * as Errors from './AppError';
 import { HttpStatusCode } from './HttpStatusCode';
+import { Logger } from '../middlewares/logger';
 
-/** Factory per la creazione di errori personalizzati. */
+/** Factory class for creating custom errors based on HTTP status codes. */
 export class ErrorFactory {
+  /**
+   * Retrieves an error instance based on the provided HTTP status code type.
+   *
+   * @param {string} type - The HTTP status code type (as a string).
+   * @returns {Errors.ErrorMsg | null} An instance of the corresponding error class, or null if the type is not recognized.
+   */
   static getError(type: string): Errors.ErrorMsg | null {
     switch (HttpStatusCode[type]) {
       case HttpStatusCode.BadRequest:
@@ -31,7 +38,15 @@ export class ErrorFactory {
   }
 }
 
+/**
+ * Creates an InternalServerError with additional details and an underlying error. Here we use logStack that is very helpful for debugging and show
+ * info about nested errors.
+ *
+ * @param {string} details - A description of the additional error details.
+ * @param {Error} error - The underlying error to include.
+ * @returns {Errors.ErrorMsg} An instance of InternalServerError with the provided details and underlying error.
+ */
 export function ISError(details: string, error: Error): Errors.ErrorMsg {
-  //console.error(error);
+  Logger.logStack(`Internal Server Error LOG: ${details}`, error);
   return new Errors.InternalServerError().setDetails(details).setErrorDetail(error);
 }

@@ -9,6 +9,13 @@ const userRepository = new UserRepository();
 const roleRepository = new RoleRepository();
 
 class UserService {
+  /**
+   * Registers a new user.
+   *
+   * @param {Request} req - The Express request object containing user registration details.
+   * @param {Response} res - The Express response object used to send the response.
+   * @param {NextFunction} next - The next middleware function.
+   */
   async registerUser(req: Request, res: Response, next: NextFunction) {
     req.validateBody(['email', 'password']);
     const { email, password } = req.body;
@@ -24,7 +31,7 @@ class UserService {
       const desiredRole = 'User';
       const role = await roleRepository.getRoleByName(desiredRole);
       if (!role) {
-        return res.build('BadRequest', `"User" role don't exist`);
+        return res.build('BadRequest', `"User" role doesn't exist`);
       }
       const roleId = role.id;
       const tokens = 0;
@@ -36,10 +43,17 @@ class UserService {
       });
       res.build('Created', 'User registration complete', newUser);
     } catch (err) {
-      next(ISError('Error during  user registration.', err));
+      next(ISError('Error during user registration.', err));
     }
   }
 
+  /**
+   * Logs in a user and generates a JWT token.
+   *
+   * @param {Request} req - The Express request object containing login details.
+   * @param {Response} res - The Express response object used to send the response.
+   * @param {NextFunction} next - The next middleware function.
+   */
   async loginUser(req: Request, res: Response, next: NextFunction) {
     req.validateBody(['email', 'password']);
     const { email, password } = req.body;
@@ -50,25 +64,24 @@ class UserService {
         return res.build('BadRequest', 'User email not found');
       }
 
-      // Verifica della password
+      // Verify the password
       const isValidPassword = await user.comparePassword(password);
       if (!isValidPassword) {
         return res.build('Unauthorized', 'User password incorrect');
       }
 
+      // Generate JWT token with asymmetric encryption
       let token;
-      // Generazione del token JWT Asymmetrico
       const private_key = await fs.promises.readFile('./src/services/jwtRS256.key');
       token = jwt.sign(
         {
           userId: user.id,
           email: user.email,
-          exp: Math.floor(Date.now() / 1000) + 60 * 60 * parseInt('24000'||process.env.JWT_EXP_H || '1'),
+          exp: Math.floor(Date.now() / 1000) + 60 * 60 * parseInt(process.env.JWT_EXP_H || '1'),
         },
         private_key,
         { algorithm: 'RS256' }
       );
-
 
       res.build('OK', 'Login completed', token);
     } catch (err) {
@@ -76,6 +89,13 @@ class UserService {
     }
   }
 
+  /**
+   * Retrieves a list of all users.
+   *
+   * @param {Request} req - The Express request object.
+   * @param {Response} res - The Express response object used to send the response.
+   * @param {NextFunction} next - The next middleware function.
+   */
   async getUsers(req: Request, res: Response, next: NextFunction) {
     try {
       const users = await userRepository.getUsers();
@@ -85,24 +105,24 @@ class UserService {
 
       res.build('OK', 'Users list', users);
     } catch (err) {
-      next(ISError('Error during user retreival.'), err);
+      next(ISError('Error during user retrieval.', err));
     }
   }
 
-  async refillUser(req: Request, res: Response, next: NextFunction) {
-    
-     
+  /**
+   * Allows an admin to refill tokens for a user.
+   *
+   * @param {Request} req - The Express request object containing user ID and token amount.
+   * @param {Response} res - The Express response object used to send the response.
+   * @param {NextFunction} next - The next middleware function.
+   */
+  async rechargeUser(req: Request, res: Response, next: NextFunction) {
     const userId = parseInt(req.params.id);
-
     req.validateQuery(['tokens']);
-
     const { tokens } = req.query;
 
-    
     try {
-
       const refillingUserId = parseInt(req['userId']);
-
 
       if (isNaN(userId)) {
         return res.build('BadRequest', 'User ID is required and must be a valid number');
@@ -111,32 +131,25 @@ class UserService {
         return res.build('NotFound', 'User not found');
       }
 
-
-
-
-
       const user = await userRepository.getUserById(userId);
       if (!user) {
         return res.build('BadRequest', 'User not found');
       }
+
       const role = await userRepository.getUserRoleNameById(refillingUserId);
-      console.log('user.role',role)
       if (role !== 'Admin') {
-        return res.build('Forbidden', 'Normal users cannot refill token');
+        return res.build('Forbidden', 'Normal users cannot refill tokens');
       }
+
       const updatedTokens = parseFloat(user.tokens) + parseFloat(tokens);
-      console.log('\n\n\n\n\n\nuserId',userId, updatedTokens)
-
-      const result = await userRepository.updateUser( user, { tokens: updatedTokens })
-      if (result==0){
-        next(ISError('Error during user refillig.'), new Error('updateUser failed'));
+      const result = await userRepository.updateUser(user, { tokens: updatedTokens });
+      if (result === 0) {
+        next(ISError('Error during user refilling.', new Error('updateUser failed')));
       } else {
-      return res.build('OK', `User now have ${updatedTokens} tokens `, result);
+        return res.build('OK', `User now has ${parseFloat(updatedTokens.toFixed(2))} tokens`, result);
       }
-
     } catch (err) {
-      console.log(err)
-      next(ISError('Error during user retreival.'), err);
+      next(ISError('Error during user retrieval.', err));
     }
   }
 }

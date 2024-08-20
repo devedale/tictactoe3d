@@ -5,7 +5,7 @@ interface ICreateRole {
   name: string;
 }
 
-/** RoleRepository handles the CRUD operations for roles. */
+/** Repository class for managing Role-related database operations. */
 class RoleRepository {
   /**
    * Creates a new role.
@@ -19,8 +19,7 @@ class RoleRepository {
       const role = await Role.dao.save(data);
       return role as Role;
     } catch (error) {
-      console.error(error);
-      throw new Error('Role creation failed');
+      throw error;
     }
   }
 
@@ -36,8 +35,7 @@ class RoleRepository {
       const role = await Role.dao.get(id);
       return role as Role;
     } catch (error) {
-      console.error(error);
-      throw new Error('Find role by id failed');
+      throw error;
     }
   }
 
@@ -53,8 +51,7 @@ class RoleRepository {
       console.log('Role deletion:', role);
       return await Role.dao.delete(role);
     } catch (error) {
-      console.error(error);
-      throw new Error('Role deletion failed');
+      throw error;
     }
   }
 
@@ -71,8 +68,7 @@ class RoleRepository {
       const role = await Role.findOne({ where: { name: roleName } });
       return role as Role;
     } catch (error) {
-      console.error(error);
-      throw new Error('Find role by name failed');
+      throw error;
     }
   }
 }
