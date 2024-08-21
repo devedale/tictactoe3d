@@ -27,8 +27,8 @@ module.exports = {
     // Insert user records
     await queryInterface.bulkInsert('users', [
       {
-        email: 'ai', // Example user with a placeholder password
-        password: '$2b$10$' + 'a'.repeat(53), // Invalid password hash (just a placeholder)
+        email: 'ai', // This is needed in order to have sistem working
+        password: '$2b$10$' + 'a'.repeat(53), // Invalid password hash, this should never allow login with ai
         tokens: 10,
         roleId: 2, // User role
         createdAt: new Date(),

@@ -1,7 +1,10 @@
 /** Service class for managing and interacting with game boards. Supports both 2D and 3D boards and provides various CPU strategies for gameplay. */
 class BoardService {
   /** The default method name for CPU move strategy. */
-  private CPU_METHOD_NAME = 'cpuMCTSLogic';
+
+  //BOTH LOGIC WORK FINE AND SHOULD NOT LOSE WITH 2d and 3d Games
+  //private CPU_METHOD_NAME = 'cpuDynamicLogic';  //this logic try to work dinamically and than stops if pass to much time
+  private CPU_METHOD_NAME = 'cpuMCTSLogic'; //this logic is based on MCTS random algorithm
 
   /**
    * Determines the size of the board based on its type.
@@ -11,6 +14,11 @@ class BoardService {
    */
   private SIZE(type: '2d' | '3d'): number {
     return type.toLowerCase() === '3d' ? 4 : 3;
+  }
+  private memo: Map<string, { bestScore: number; bestMove: number[] }> = new Map();
+
+  private boardToString(board: Board2D | Board3D): string {
+    return JSON.stringify(board);
   }
 
   /**
@@ -146,22 +154,28 @@ class BoardService {
    * @returns A promise that resolves to the coordinates of the best move based on dynamic programming.
    */
   public async cpuDynamicLogic(board: Board2D | Board3D, currentPlayer: 'X' | 'O'): Promise<number[]> {
-    const memo: Record<string, number> = {};
     const startTime = Date.now();
+    const timeout = 5000; // 5 seconds timeout
+    const oppositePlayer = currentPlayer === 'X' ? 'O' : 'X';
 
-    const boardToString = (board: Board2D | Board3D): string => JSON.stringify(board);
+    // Memoization map for board states
+    this.memo = new Map<string, { bestScore: number; bestMove: number[] }>();
 
-    /**
-     * Evaluates a move using dynamic programming.
-     *
-     * @param board The current game board.
-     * @param currentPlayer The current player ('X' or 'O').
-     * @returns A promise that resolves to the score of the board state after the move.
-     */
-    const valuateMoveDynamicProgramming = async (board: Board2D | Board3D, currentPlayer: 'X' | 'O'): Promise<number> => {
-      const boardKey = `${boardToString(board)}-${currentPlayer}`;
-      if (memo[boardKey] !== undefined) {
-        return memo[boardKey];
+    const evaluateMove = async (
+      board: Board2D | Board3D,
+      currentPlayer: 'X' | 'O',
+      alpha: number = -Infinity,
+      beta: number = Infinity
+    ): Promise<number> => {
+      if (Date.now() - startTime > timeout) {
+        // Timeout protection
+        return currentPlayer === 'O' ? 0 : 0; // Adjust this to a sensible default
+      }
+
+      const boardKey = this.boardToString(board);
+
+      if (this.memo.has(boardKey)) {
+        return this.memo.get(boardKey).bestScore;
       }
 
       const winner = await this.checkVictory(board);
@@ -171,59 +185,109 @@ class BoardService {
 
       const nullIndices = await this.getNullIndices(board);
       if (nullIndices.length === 0) {
-        return 0;
+        return 0; // Draw
       }
 
-      let bestScore = null;
+      let bestScore = currentPlayer === 'O' ? -Infinity : Infinity;
 
-      for (let i = 0; i < nullIndices.length; i++) {
-        const coordinates = nullIndices[i];
-
+      for (const move of nullIndices) {
         const boardCopy = JSON.parse(JSON.stringify(board));
+        const newBoard = await this.setMove(boardCopy, move, currentPlayer);
 
-        const newBoard = await this.setMove(boardCopy, coordinates, currentPlayer);
+        const score = await evaluateMove(newBoard, currentPlayer === 'X' ? 'O' : 'X', alpha, beta);
 
-        if (Date.now() - startTime > 5000) {
-          return null;
+        if (currentPlayer === 'O') {
+          bestScore = Math.max(bestScore, score);
+          alpha = Math.max(alpha, bestScore);
+        } else {
+          bestScore = Math.min(bestScore, score);
+          beta = Math.min(beta, bestScore);
         }
 
-        const score = await valuateMoveDynamicProgramming(newBoard, currentPlayer === 'X' ? 'O' : 'X');
-
-        if (bestScore === null || (currentPlayer === 'O' && score > bestScore) || (currentPlayer === 'X' && score < bestScore)) {
-          bestScore = score;
+        if (beta <= alpha) {
+          break; // Beta cut-off
         }
       }
 
-      memo[boardKey] = bestScore;
+      this.memo.set(boardKey, { bestScore, bestMove: nullIndices[0] });
       return bestScore;
     };
 
+    // Check for immediate winning moves for the CPU
+    const winningMove = await this.findWinningMove(board, currentPlayer);
+    if (winningMove) {
+      return winningMove; // Make a winning move
+    }
+
+    // Check for immediate blocking moves
+    const blockMove = await this.findBlockingMove(board, oppositePlayer);
+    if (blockMove) {
+      return blockMove; // Block the opponent's winning move
+    }
+
+    // Proceed with move evaluation if no immediate actions were taken
     const nullIndices = await this.getNullIndices(board);
     let bestMove = nullIndices[0];
-    let bestScore = null;
+    let bestScore = currentPlayer === 'O' ? -Infinity : Infinity;
 
-    for (let i = 0; i < nullIndices.length; i++) {
-      const coordinates = nullIndices[i];
-
+    for (const move of nullIndices) {
       const boardCopy = JSON.parse(JSON.stringify(board));
+      const newBoard = await this.setMove(boardCopy, move, currentPlayer);
 
-      const newBoard = await this.setMove(boardCopy, coordinates, currentPlayer);
+      const score = await evaluateMove(newBoard, currentPlayer === 'X' ? 'O' : 'X');
 
-      // Check for timeout to avoid starvation
-      if (Date.now() - startTime > 5000) {
-        const randomIndex = Math.floor(Math.random() * nullIndices.length);
-        return nullIndices[randomIndex];
+      if (Date.now() - startTime > timeout) {
+        break; // Timeout protection
       }
 
-      const score = await valuateMoveDynamicProgramming(newBoard, currentPlayer === 'X' ? 'O' : 'X');
-
-      if (bestScore === null || (currentPlayer === 'O' && score > bestScore) || (currentPlayer === 'X' && score < bestScore)) {
-        bestMove = coordinates;
+      if ((currentPlayer === 'O' && score > bestScore) || (currentPlayer === 'X' && score < bestScore)) {
+        bestMove = move;
         bestScore = score;
       }
     }
 
     return bestMove;
+  }
+
+  // Helper method to find a blocking move
+  private async findBlockingMove(board: Board2D | Board3D, player: 'X' | 'O'): Promise<number[]> {
+    const nullIndices = await this.getNullIndices(board);
+
+    for (const move of nullIndices) {
+      const boardCopy = JSON.parse(JSON.stringify(board));
+      const newBoard = await this.setMove(boardCopy, move, player);
+
+      if ((await this.checkVictory(newBoard)) === player) {
+        return move; // This move blocks the opponent's winning move
+      }
+    }
+
+    return null;
+  }
+
+  // Helper method to find a winning move
+  private async findWinningMove(board: Board2D | Board3D, player: 'X' | 'O'): Promise<number[]> {
+    const nullIndices = await this.getNullIndices(board);
+
+    for (const move of nullIndices) {
+      const boardCopy = JSON.parse(JSON.stringify(board));
+      const newBoard = await this.setMove(boardCopy, move, player);
+
+      if ((await this.checkVictory(newBoard)) === player) {
+        return move; // This move wins the game
+      }
+    }
+
+    return null;
+  }
+
+  public async checkOpponentVictory(board: Board2D | Board3D, player: 'X' | 'O'): Promise<boolean> {
+    // The opponent is the other player
+    const opponent = player === 'X' ? 'O' : 'X';
+
+    // Check if the opponent has won with the current board state
+    const winner = await this.checkVictory(board);
+    return winner === opponent;
   }
 
   /**
@@ -289,7 +353,7 @@ class BoardService {
   public async getCurrentAndOpponentPlayers(game): Promise<{ currentPlayerId: string; opponentId: string }> {
     const players = [game.userId1, game.userId2];
     const currentPlayerId = players[game.currentPlayer - 1];
-    const opponentId = players.find((p) => p !== currentPlayerId);
+    const opponentId = players.filter((p) => p !== currentPlayerId)[0];
     return { currentPlayerId, opponentId };
   }
 
@@ -386,90 +450,151 @@ class BoardService {
 
     return winner || null;
   }
-
-  /** Class implementing Monte Carlo Tree Search (MCTS) for move selection. */
+  /** Monte Carlo Tree Search (MCTS) implementation for game AI. This class performs MCTS to determine the best move for a given player in a board game. */
   private MCTS = class MCTS {
     private boardService: BoardService;
     private board: Board2D | Board3D;
     private player: 'X' | 'O';
     private simulations: number;
+    private root: MCTSNode;
 
     /**
-     * Initializes an MCTS instance.
+     * Creates an instance of MCTS.
      *
-     * @param boardService The BoardService instance.
-     * @param board The current game board.
-     * @param player The player using MCTS ('X' or 'O').
-     * @param simulations The number of simulations to run.
+     * @param {BoardService} boardService - Service used for interacting with the game board.
+     * @param {Board2D | Board3D} board - The current state of the game board.
+     * @param {'X' | 'O'} player - The player for whom the MCTS is being performed.
+     * @param {number} simulations - The number of simulations to perform.
      */
     constructor(boardService: BoardService, board: Board2D | Board3D, player: 'X' | 'O', simulations: number) {
       this.boardService = boardService;
       this.board = board;
       this.player = player;
       this.simulations = simulations;
+      this.root = {
+        board,
+        move: [],
+        parent: null,
+        children: [],
+        visits: 0,
+        wins: 0,
+      };
     }
 
     /**
-     * Simulates a game from the current board state and returns the result.
+     * Simulates a random game from a given node to the end.
      *
-     * @param board The board state to simulate from.
-     * @param currentPlayer The current player in the simulation ('X' or 'O').
-     * @returns A promise that resolves to the result of the simulation (1 for win, -1 for loss, 0 for draw).
+     * @param {MCTSNode} node - The node to simulate from.
+     * @returns {Promise<number>} - Returns 1 if the player wins, -1 if loses, or 0 if a draw.
      */
-    private async simulate(board: Board2D | Board3D, currentPlayer: 'X' | 'O'): Promise<number> {
-      const nullIndices = await this.boardService.getNullIndices(board);
-      if (nullIndices.length === 0) {
-        return 0;
+    private async simulate(node: MCTSNode): Promise<number> {
+      let currentBoard = JSON.parse(JSON.stringify(node.board));
+      let currentPlayer = this.player;
+      let winner: string | null = null;
+
+      while (winner === null) {
+        const nullIndices = await this.boardService.getNullIndices(currentBoard);
+        if (nullIndices.length === 0) break; // Draw
+
+        const randomMove = nullIndices[Math.floor(Math.random() * nullIndices.length)];
+        currentBoard = await this.boardService.setMove(currentBoard, randomMove, currentPlayer);
+
+        winner = await this.boardService.checkVictory(currentBoard);
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
       }
-      const randomIndex = Math.floor(Math.random() * nullIndices.length);
-      const randomMove = nullIndices[randomIndex];
-      const newBoard = await this.boardService.setMove(JSON.parse(JSON.stringify(board)), randomMove, currentPlayer);
-      const winner = await this.boardService.checkVictory(newBoard);
-      if (winner === this.player) {
-        return 1;
-      } else if (winner) {
-        // Check for losing conditions
-        return -1;
-      } else {
-        return await this.simulate(newBoard, currentPlayer === 'X' ? 'O' : 'X');
+
+      if (winner === this.player) return 1;
+      if (winner === null) return 0;
+      return -1;
+    }
+
+    /**
+     * Expands the given node by generating all possible moves from that node.
+     *
+     * @param {MCTSNode} node - The node to expand.
+     * @returns {Promise<void>}
+     */
+    private async expand(node: MCTSNode): Promise<void> {
+      const nullIndices = await this.boardService.getNullIndices(node.board);
+
+      for (const move of nullIndices) {
+        const newBoard = await this.boardService.setMove(JSON.parse(JSON.stringify(node.board)), move, this.player);
+        const childNode: MCTSNode = {
+          board: newBoard,
+          move,
+          parent: node,
+          children: [],
+          visits: 0,
+          wins: 0,
+        };
+        node.children.push(childNode);
       }
     }
 
     /**
-     * Runs the MCTS algorithm to select the best move.
+     * Selects the best child node using the Upper Confidence Bound for Trees (UCT) formula.
      *
-     * @returns A promise that resolves to the best move as a coordinate array.
+     * @param {MCTSNode} node - The node to select the best child from.
+     * @returns {Promise<MCTSNode>} - The best child node.
+     */
+    private async bestChild(node: MCTSNode): Promise<MCTSNode> {
+      let bestChild = node.children[0];
+      let bestScore = -Infinity;
+
+      for (const child of node.children) {
+        const score = child.wins / (child.visits + 1) + Math.sqrt((2 * Math.log(node.visits + 1)) / (child.visits + 1));
+        if (score > bestScore) {
+          bestScore = score;
+          bestChild = child;
+        }
+      }
+
+      return bestChild;
+    }
+
+    /**
+     * Runs the MCTS algorithm to determine the best move.
+     *
+     * @returns {Promise<number[]>} - The best move determined by the MCTS algorithm.
      */
     public async run(): Promise<number[]> {
-      const moves = await this.boardService.getNullIndices(this.board);
-      const scores: Map<string, number> = new Map();
-      const moveCounts: Map<string, number> = new Map();
-
-      for (const move of moves) {
-        scores.set(JSON.stringify(move), 0);
-        moveCounts.set(JSON.stringify(move), 0);
+      // Check if there's an immediate blocking move
+      const blockMove = await this.boardService.findBlockingMove(this.board, this.player === 'X' ? 'O' : 'X');
+      if (blockMove) {
+        return blockMove; // Block the opponent's winning move
       }
 
+      // Main MCTS logic
       for (let i = 0; i < this.simulations; i++) {
-        const move = moves[Math.floor(Math.random() * moves.length)];
-        const boardCopy = JSON.parse(JSON.stringify(this.board));
-        const newBoard = await this.boardService.setMove(boardCopy, move, this.player);
-        const result = await this.simulate(newBoard, this.player === 'X' ? 'O' : 'X');
-        const moveKey = JSON.stringify(move);
-        const currentScore = scores.get(moveKey) || 0;
-        const currentCount = moveCounts.get(moveKey) || 0;
-        scores.set(moveKey, currentScore + result);
-        moveCounts.set(moveKey, currentCount + 1);
+        let node = this.root;
+
+        // Selection
+        while (node.children.length > 0) {
+          node = await this.bestChild(node);
+        }
+
+        // Expansion
+        await this.expand(node);
+
+        // Simulation
+        const result = await this.simulate(node);
+
+        // Backpropagation
+        while (node !== null) {
+          node.visits++;
+          node.wins += result;
+          node = node.parent;
+        }
       }
 
-      let bestMove: number[] = moves[0];
-      let bestScore = -Infinity;
-      for (const move of moves) {
-        const moveKey = JSON.stringify(move);
-        const averageScore = (scores.get(moveKey) || 0) / (moveCounts.get(moveKey) || 1);
-        if (averageScore > bestScore) {
-          bestScore = averageScore;
-          bestMove = move;
+      // Choose the best move based on the root node's children
+      let bestMove = null;
+      let bestWinRatio = -Infinity;
+      for (const child of this.root.children) {
+        const winRatio = child.wins / child.visits;
+        if (winRatio > bestWinRatio) {
+          bestWinRatio = winRatio;
+          bestMove = child.move;
         }
       }
 

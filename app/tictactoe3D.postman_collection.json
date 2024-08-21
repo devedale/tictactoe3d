@@ -1,0 +1,1315 @@
+{
+	"info": {
+		"_postman_id": "dab3d0b0-0901-497c-9643-749a3d9c6c58",
+		"name": "tictactoe3D",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "15883634"
+	},
+	"item": [
+		{
+			"name": "registerUser",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response has success message\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.success).to.eql(true);\r",
+							"    pm.expect(jsonData.message).to.eql(\"User registration complete\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response contains user details\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.results).to.have.all.keys(\"id\", \"email\", \"tokens\", \"roleId\", \"createdAt\", \"updatedAt\");\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"test@test.com\",\r\n    \"password\": \"asdlkj123\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/users/register",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"users",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "registerUser WrongMailFormat",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {\r",
+							"    pm.response.to.have.status(400);\r",
+							"});\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							"pm.test(\"Response contains required fields\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.all.keys('success', 'message', 'code', 'details');\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(\"Error code is 400\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.code).to.eql(400);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Error message is correct\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.message).to.eql(\"Bad request... Fix and retry...\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Error details contain 'Invalid email format'\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const details = jsonData.details;\r",
+							"    const expectedSubstring = \"Invalid email format\";\r",
+							"\r",
+							"    pm.expect(details).to.include(expectedSubstring);\r",
+							"});\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"testtest.com\",\r\n    \"password\": \"asdlkj123\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/users/register",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"users",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "loginUser",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response has success message\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.success).to.eql(true);\r",
+							"    pm.expect(jsonData.message).to.eql(\"Login completed\");\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"admin_email@email.com\",\r\n    \"password\": \"admin_secret_password\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/users/login",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"users",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "createGame WithAiStartingPlayer",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response has success message\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.success).to.eql(true);\r",
+							"    pm.expect(jsonData.message).to.eql(\"Game creation complete and AI played the first move\");\r",
+							"});\r",
+							"pm.test(\"Current player is correct\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.results.currentPlayer).to.eql(1);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response contains game details\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.results).to.have.all.keys(\"id\", \"userId1\", \"userId2\", \"type\",\"board\", \"currentPlayer\", \"winner\", \"moves\", \"createdAt\", \"updatedAt\");\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \r\n    \"player2Mail\":\"ai\",\r\n    \"type\":\"2D\",\r\n    \"currentPlayer\":\"2\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/games",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"games"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "createGame FailWithActiveGame",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {\r",
+							"    pm.response.to.have.status(400);\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response contains required fields\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.all.keys('success', 'message', 'code', 'details');\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(\"Error code is 400\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.code).to.eql(400);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Error message is correct\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.message).to.eql(\"Bad request... Fix and retry...\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Error details contain expected message\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const details = jsonData.details;\r",
+							"    const expectedSubstring = \"You must finish your active game first, active game id:\";\r",
+							"\r",
+							"    pm.expect(details).to.include(expectedSubstring);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \r\n    \"player2Mail\":\"ai\",\r\n    \"type\":\"3D\",\r\n    \"currentPlayer\":\"1\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/games",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"games"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "resignGame",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(\"Response contains resign details\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.results).to.have.all.keys(\"gameId\");\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \r\n    \"player2Mail\":\"ai\",\r\n    \"type\":\"2d\",\r\n    \"currentPlayer\":\"2\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/games/12/resign",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"games",
+						"12",
+						"resign"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "createGame WithFirstTurn",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response has success message\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.success).to.eql(true);\r",
+							"    pm.expect(jsonData.message).to.eql(\"Game creation complete\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response contains game details\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.results).to.have.all.keys(\"id\", \"userId1\", \"userId2\", \"type\",\"board\", \"currentPlayer\", \"winner\", \"moves\", \"createdAt\", \"updatedAt\");\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \r\n    \"player2Mail\":\"ai\",\r\n    \"type\":\"2D\",\r\n    \"currentPlayer\":\"1\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/games",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"games"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "rechargeUser",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(\"Response result confirm recharging\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.results).to.eql(true);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \r\n    \"player2Mail\":\"ai\",\r\n    \"type\":\"2d\",\r\n    \"currentPlayer\":\"2\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/users/3/recharge?tokens=12.3",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"users",
+						"3",
+						"recharge"
+					],
+					"query": [
+						{
+							"key": "tokens",
+							"value": "12.3"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "rechargeUser InvalidTokenFormat",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {\r",
+							"    pm.response.to.have.status(400);\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response contains required fields\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.all.keys('success', 'message', 'code', 'details');\r",
+							"});\r",
+							"\r",
+							"\r",
+							"pm.test(\"Error code is 400\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.code).to.eql(400);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Error message is correct\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.message).to.eql(\"Bad request... Fix and retry...\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Error details contain 'tokens is required and must be a valid number'\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const details = jsonData.details;\r",
+							"    const expectedSubstring = \"tokens is required and must be a non-negative number\";\r",
+							"\r",
+							"    pm.expect(details).to.include(expectedSubstring);\r",
+							"});\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \r\n    \"player2Mail\":\"ai\",\r\n    \"type\":\"2d\",\r\n    \"currentPlayer\":\"2\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/users/3/recharge?tokens=asd",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"users",
+						"3",
+						"recharge"
+					],
+					"query": [
+						{
+							"key": "tokens",
+							"value": "asd"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "rechargeUser InvalidParamsIds",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {\r",
+							"    pm.response.to.have.status(400);\r",
+							"});\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response contains required fields\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.all.keys('success', 'message', 'code', 'details');\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Error code is 400\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.code).to.eql(400);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Error message is correct\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.message).to.eql(\"Bad request... Fix and retry...\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Error details contain the correct message\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const details = jsonData.details;\r",
+							"    const expectedSubstring = \"Invalid key(s) in request query: id\";\r",
+							"\r",
+							"    pm.expect(details).to.include(expectedSubstring);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \r\n    \"player2Mail\":\"ai\",\r\n    \"type\":\"2d\",\r\n    \"currentPlayer\":\"2\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/users/3/recharge?id=10",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"users",
+						"3",
+						"recharge"
+					],
+					"query": [
+						{
+							"key": "id",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "makeMove",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response contains required fields\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.all.keys('success', 'message', 'results');\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Success field is true\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.success).to.eql(true);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Message field is correct\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.message).to.eql(\"After your move, the computer made its move\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Results contain required fields\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.results).to.have.all.keys('result', 'board');\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Result field is true\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.results.result).to.eql(true);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Board is a 2D array with valid values\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const board = jsonData.results.board;\r",
+							"\r",
+							"    // Check if board is a 2D array\r",
+							"    pm.expect(board).to.be.an('array').that.is.not.empty;\r",
+							"    board.forEach(row => {\r",
+							"        pm.expect(row).to.be.an('array').that.is.not.empty;\r",
+							"        row.forEach(cell => {\r",
+							"            pm.expect(cell).to.be.oneOf([null, \"X\", \"O\"]);\r",
+							"        });\r",
+							"    });\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \r\n    \"player2Mail\":\"ai\",\r\n    \"type\":\"2d\",\r\n    \"currentPlayer\":\"2\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/games/13?x=0&y=2",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"games",
+						"13"
+					],
+					"query": [
+						{
+							"key": "x",
+							"value": "0"
+						},
+						{
+							"key": "y",
+							"value": "2"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "makeMove InvalidMove",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \r\n    \"player2Mail\":\"ai\",\r\n    \"type\":\"2d\",\r\n    \"currentPlayer\":\"2\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/games/14?x=0&y=0&z=0",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"games",
+						"14"
+					],
+					"query": [
+						{
+							"key": "x",
+							"value": "0"
+						},
+						{
+							"key": "y",
+							"value": "0"
+						},
+						{
+							"key": "z",
+							"value": "0"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "gameMoveHistory",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Ottenere statistiche - Contenuto è un file PDF\", function () {\r",
+							"    pm.expect(pm.response.headers.get(\"Content-Type\")).to.eql(\"application/pdf\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Ottenere statistiche - Lunghezza del corpo della risposta è maggiore di 0\", function () {\r",
+							"    pm.expect(pm.response.text()).to.have.length.greaterThan(0);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \r\n    \"player2Mail\":\"ai\",\r\n    \"type\":\"2d\",\r\n    \"currentPlayer\":\"2\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/games/2/history?startDate=2024-08-17T16:38:20&endDate&format=pdf",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"games",
+						"2",
+						"history"
+					],
+					"query": [
+						{
+							"key": "startDate",
+							"value": "2024-08-17T16:38:20"
+						},
+						{
+							"key": "endDate",
+							"value": null
+						},
+						{
+							"key": "format",
+							"value": "pdf"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "gameStatus",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							"\r",
+							"\r",
+							"\r",
+							"pm.test(\"Response contains gameStatus details\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.results).to.have.all.keys(\"gameId\",\"players\",\"currentPlayer\",\"winner\",\"board\",\"moves\",);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Players array contains exactly 2 players\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const players = jsonData.results.players;\r",
+							"    pm.expect(players).to.be.an('array').that.has.lengthOf(2);\r",
+							"});\r",
+							"pm.test(\"Winner is a valid player or null\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    const winner = jsonData.results.winner;\r",
+							"    const players = jsonData.results.players;\r",
+							"\r",
+							"    pm.expect(winner).to.be.oneOf([null, ...players]);\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/games/2",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"games",
+						"2"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "pdf",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "rankList",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response contains required fields\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.property(\"success\");\r",
+							"    pm.expect(jsonData).to.have.property(\"message\");\r",
+							"    pm.expect(jsonData).to.have.property(\"results\");\r",
+							"    pm.expect(jsonData.results).to.be.an('array');\r",
+							"    \r",
+							"    jsonData.results.forEach(result => {\r",
+							"        pm.expect(result).to.have.all.keys('userId', 'email', 'wins', 'winsForResign', 'losses', 'lossesForResign', 'totalGames', 'winPercentage');\r",
+							"        \r",
+							"    });\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/games/rankList",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"games",
+						"rankList"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getGames",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/games",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"games"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getUsers",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Ottenere utenti - Stato 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Ottenere utenti - Risposta ha successo true\", function () {\r",
+							"    const jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.success).to.be.true;\r",
+							"});\r",
+							"\r",
+							"pm.test(`Response time is within limit: ${parseInt(pm.environment.get(\"RES_TIME\"))}`, function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(pm.environment.get(\"RES_TIME\")));\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "filter-header",
+						"value": "{{FILTER HEADER VALUE}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "127.0.0.1:{{API_PORT}}{{API_VERSION}}/users",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "{{API_PORT}}{{API_VERSION}}",
+					"path": [
+						"users"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

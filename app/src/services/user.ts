@@ -124,6 +124,13 @@ class UserService {
         return res.build('NotFound', 'Users not found');
       }
 
+      //debug purpose route
+      const authUserId = parseInt(req['userId']);
+      const role = await userRepository.getUserRoleNameById(authUserId);
+      if (role !== 'Admin') {
+        return res.build('Forbidden', 'Normal users cannot check users');
+      }
+
       res.build('OK', 'Users list', users);
     } catch (err) {
       next(ISError('Error during user retrieval.', err));
@@ -156,7 +163,9 @@ class UserService {
       if (!user) {
         return res.build('BadRequest', 'User not found');
       }
-
+      if (isNaN(tokens) || tokens < 0) {
+        return res.build('BadRequest', 'tokens is required and must be a non-negative number');
+    }
       const role = await userRepository.getUserRoleNameById(refillingUserId);
       if (role !== 'Admin') {
         return res.build('Forbidden', 'Normal users cannot refill tokens');

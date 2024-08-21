@@ -1,12 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import { GameRepository } from '../database/repository/game';
 import { UserRepository } from '../database/repository/user';
+import { RoleRepository } from '../database/repository/role';
 import BoardService from './board';
 import ExportService from './export';
 import { ErrorFactory } from '../errors/ErrorFactory';
 const ISError = ErrorFactory.ISError;
 
 const userRepository = new UserRepository();
+const roleRepository = new RoleRepository();
 const gameRepository = new GameRepository();
 const boardService = new BoardService();
 
@@ -121,29 +123,16 @@ export class GameService {
       if (!games || games.length === 0) {
         return res.build('NotFound', 'No games found');
       }
+      
 
-      res.build('OK', 'Games list', games);
-    } catch (err) {
-      console.error(err);
-      next(ISError('Error during games retrieval.', err));
-    }
-  }
-
-  /**
-   * Retrieves the list of games along with their boards.
-   *
-   * @param {Request} req - The Express request object.
-   * @param {Response} res - The Express response object.
-   * @param {NextFunction} next - The next middleware function.
-   */
-  async getGamesAndBoards(req: Request, res: Response, next: NextFunction) {
-    try {
-      const games = await gameRepository.getGamesAndBoards();
-      if (!games || games.length === 0) {
-        return res.build('NotFound', 'No games found');
+      //debug purpose route
+      const authUserId = parseInt(req['userId']);
+      const role = await userRepository.getUserRoleNameById(authUserId);
+      if (role !== 'Admin') {
+        return res.build('Forbidden', 'Normal users cannot check games');
       }
 
-      res.build('OK', 'Games and boards list', games);
+      res.build('OK', 'Games list', games);
     } catch (err) {
       console.error(err);
       next(ISError('Error during games retrieval.', err));
@@ -211,6 +200,7 @@ export class GameService {
           return res.build('BadRequest', `This cell is not empty, cell value: ${valueInCoord}`);
         }
       }
+      const { currentPlayerId, opponentId } = await boardService.getCurrentAndOpponentPlayers(game);
 
       // Set the player's move on the board
       const updatedBoard = await boardService.setMove(board, move, currentPlayerMarker);
@@ -243,16 +233,19 @@ export class GameService {
         winner = await boardService.checkVictory(updatedBoardCpu);
         if (winner) {
           await gameRepository.updateGame(game.id, { winner: 2 });
-          return res.build('OK', `CPU (${winner}) has won!`, { resultCpu, board: updatedBoardCpu });
+          return res.build('OK', `CPU (${winner}) has won!`, { result: resultCpu, board: updatedBoardCpu });
         }
         const availableMoveCpu = await boardService.getNullIndices(updatedBoardCpu);
         if (availableMoveCpu.length === 0) {
           await gameRepository.updateGame(game.id, { winner: 0 });
-          return res.build('OK', 'After your move, the computer made its move, and the game ended in a tie.', { resultCpu, board: updatedBoardCpu });
+          return res.build('OK', 'After your move, the computer made its move, and the game ended in a tie.', {
+            result: resultCpu,
+            board: updatedBoardCpu,
+          });
         }
         // Update the game state and switch the turn to the player
         await gameRepository.changeTurn(game.id);
-        return res.build('OK', 'After your move, the computer made its move', { resultCpu, board: updatedBoardCpu });
+        return res.build('OK', 'After your move, the computer made its move', { result: resultCpu, board: updatedBoardCpu });
       } else {
         // Switch the turn to the other player
         await gameRepository.changeTurn(game.id);
