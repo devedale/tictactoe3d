@@ -571,7 +571,7 @@
 						}
 					]
 				},
-				"method": "POST",
+				"method": "PATCH",
 				"header": [
 					{
 						"key": "filter-header",
@@ -670,7 +670,7 @@
 						}
 					]
 				},
-				"method": "POST",
+				"method": "PATCH",
 				"header": [
 					{
 						"key": "filter-header",
@@ -766,7 +766,7 @@
 						}
 					]
 				},
-				"method": "POST",
+				"method": "PATCH",
 				"header": [
 					{
 						"key": "filter-header",

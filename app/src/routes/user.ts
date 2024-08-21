@@ -38,7 +38,7 @@ export default (app: Express): void => {
    * @middleware authMiddleware - Middleware to authenticate requests.
    * @handler userService.refillUser - Handler to refill information for a specific user.
    */
-  app.post(`${base_url}/:id/recharge`, authMiddleware, userService.rechargeUser);
+  app.patch(`${base_url}/:id/recharge`, authMiddleware, userService.rechargeUser);
 
   /**
    * Route to get all users.
