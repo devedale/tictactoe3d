@@ -60,7 +60,6 @@ This project is an Express.js backend build exercise for a web application that 
 
   
 
-<em align="center">Developed with the software and tools below.</em>
 
   
 
