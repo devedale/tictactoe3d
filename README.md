@@ -3,11 +3,9 @@
 
 <p  align="center">
 
-  
-
-![Tic Tac Toe](./app/assets/tictactoe.png)
-
-
+<a href="(https://github.com/devedale/tictactoe3d)">
+  <img src="./app/assets/tictactoe.png" width="50" alt="Tic Tac Toe" />
+</a>
   
 
 </p>
@@ -27,10 +25,6 @@
   
 
 <p  align="center">
-
-  
-
-<em><code>► INSERT-TEXT-HERE</code></em>
 
   
 
