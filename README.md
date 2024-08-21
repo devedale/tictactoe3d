@@ -5,7 +5,8 @@
 
   
 
-<img src="[https://img.icons8.com/?size=512&id=55494&format=png](https://github.com/devedale/tictactoe3d/blob/main/app/assets/tictactoe.png)" width="100"  />
+![Tic Tac Toe](./app/assets/tictactoe.png)
+
 
   
 
