@@ -4,7 +4,7 @@ import path from 'path';
 
 // define file log path
 const LOG_FILE_PATH = path.join(__dirname, '../logs', 'app.log');
-
+const MAX_LOG_FILE_SIZE = process.env.MAX_LOG_FILE_SIZE * 1024 * 1024
 
 /**
  * Logger class provides static methods to log various types of messages including information, errors, and warnings. It also has methods to log
@@ -12,10 +12,48 @@ const LOG_FILE_PATH = path.join(__dirname, '../logs', 'app.log');
  */
 class Logger {
   /**
+   * Appends a log message to the log file.
+   *
+   *
+   * @param {string} message - The log message to be written to the file.
+   * @returns {Promise<void>} - A promise that resolves when the log operation is complete.
+   * @private
+   */
+  private static async writeLogToFile(message: string): Promise<void> {
+    if (process.env.NODE_ENV !== 'development') {
+      const logDir = path.dirname(LOG_FILE_PATH);
+  
+      try {
+        await fs.access(logDir);
+      } catch {
+        await fs.mkdir(logDir, { recursive: true });
+      }
+  
+      try {
+        const fileStats = await fs.stat(LOG_FILE_PATH);
+        const maxFileSize = MAX_LOG_FILE_SIZE * 1024 * 1024; // Set your max file size limit here (e.g., 5 MB)
+  
+        if (fileStats.size >= maxFileSize) {
+          const warningMessage = 'Log file size exceeds the maximum limit. Logging is paused.';
+          await Logger.logWarning(warningMessage, { filePath: LOG_FILE_PATH, fileSize: fileStats.size });
+          return;
+        }
+      } catch (error) {
+        // Handle the case where the log file does not exist yet
+        if (error.code !== 'ENOENT') {
+          throw error; // If it's not a 'file not found' error, rethrow it
+        }
+      }
+  
+      await fs.appendFile(LOG_FILE_PATH, `${new Date().toISOString()} - ${message}\n`, 'utf8');
+    }
+  }
+
+  /**
    * Logs informational messages to the console and file.
    *
    * @param {string} message - The informational message to log.
-   * @param {any} [data] - Optional data to include in the log.
+   * @param {any} [data] - Optional data to include in the log.ss
    */
   static async logInfo(message: string, data?: any) {
     const logMessage = `\n#LOGGER INFO#: ${message}\n${data ? JSON.stringify(data, null, 2) : ''}\n`;
@@ -117,30 +155,6 @@ class Logger {
     await Logger.writeLogToFile(logMessage);
   }
 
-  /**
-   * Asynchronously appends a log message to the specified log file. 
-   * Creates the logs directory if it does not exist.
-   * 
-   * @param {string} message - The log message to be written to the file.
-   * @returns {Promise<void>} - A promise that resolves when the message is written to the file.
-   */
-  private static async writeLogToFile(message: string): Promise<void> {
-    // Only write logs while not on development
-    if(process.env.NODE_ENV !== 'development') {
-      // Define the directory where log files will be stored
-      const logDir = path.dirname(LOG_FILE_PATH);
-
-      // Check if the directory exists, and create it if it doesn't
-      try {
-        await fs.access(logDir);
-      } catch {
-        await fs.mkdir(logDir, { recursive: true });
-      }
-
-      // Append the log message to the log file
-      await fs.appendFile(LOG_FILE_PATH, `${message}\n`, 'utf8');
-    }
-  }
 }
 
 /**

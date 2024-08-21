@@ -1,64 +1,71 @@
-version: '3'
+version: '3'  # Specifies the version of Docker Compose
+
 services:
+  # Main application service
   app:
     build:
-      context: ./app
-      dockerfile: Dockerfile
+      context: ./app  # Directory containing the Dockerfile for building the image
+      dockerfile: Dockerfile  # Name of the Dockerfile to use for the build
     ports:
-      - "${EXT_API_PORT}:${API_PORT}"
+      - "${EXT_API_PORT}:${API_PORT}"  # Maps the host machine's port to the container's API port
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_healthy  # Starts the 'app' service only when the 'db' service is healthy
     networks:
-      - network1
-      - network2
-    environment:
-      NODE_ENV: ${NODE_ENV}
-      API_VERSION: ${API_VERSION}
-      API_PORT: ${API_PORT}
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      JWT_EXP_H: ${JWT_EXP_H}
-      EXPECTED_FILTER_HEADER: ${EXPECTED_FILTER_HEADER}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_DB: ${DB_NAME}
-      REDIS_URL: ${REDIS_URL}
-      REDIS_PORT: ${REDIS_PORT}
+      - network1  # Connects the 'app' service to 'network1' and postgres 'db'
+      - network2  # Connects the 'app' service to 'network2' and cache 'redis'
+    environment:  # Environment variables passed to the container
+      NODE_ENV: ${NODE_ENV}  # This is also related to hot reload and Logger fileswriting
+      API_VERSION: ${API_VERSION}  # Version of the API used by the app routes common path
+      API_PORT: ${API_PORT}  # Internal port used by the app
+      ADMIN_EMAIL: ${ADMIN_EMAIL}  # Admin email for the application
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}  # Admin password for the application
+      JWT_EXP_H: ${JWT_EXP_H}  # JWT expiration time in hours
+      MAX_LOG_FILE_SIZE: ${MAX_LOG_FILE_SIZE} # Max Log File lines dimension
+      EXPECTED_FILTER_HEADER: ${EXPECTED_FILTER_HEADER}  # Expected custom header for API filtering
+      DB_USER: ${DB_USER}  # Database username
+      DB_PASSWORD: ${DB_PASSWORD}  # Database password
+      DB_DB: ${DB_NAME}  # Database name
+      REDIS_URL: ${REDIS_URL}  # URL for connecting to the Redis server
+      REDIS_PORT: ${REDIS_PORT}  # Port for connecting to the Redis server
     volumes:
-      - ./app/src:/usr/src/app/src
+      - ./app/src:/usr/src/app/src  # Maps the source code directory from the host to the container
 
+  # Database service (PostgreSQL)
   db:
     build:
-      context: ./db
-      dockerfile: Dockerfile
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      context: ./db  # Directory containing the Dockerfile for building the database image
+      dockerfile: Dockerfile  # Name of the Dockerfile to use for the database
+    environment:  # Environment variables for PostgreSQL
+      POSTGRES_USER: ${DB_USER}  # PostgreSQL username
+      POSTGRES_PASSWORD: ${DB_PASSWORD}  # PostgreSQL password
+      POSTGRES_DB: ${DB_NAME}  # PostgreSQL database name
     volumes:
-      - ./db/initdb:/docker-entrypoint-initdb.d
-      - db_data:/var/lib/postgresql/data
+      - ./db/initdb:/docker-entrypoint-initdb.d  # Initialize the database with scripts
+      - db_data:/var/lib/postgresql/data  # Persists database data in a Docker volume
     networks:
-      - network1
-    healthcheck:
-      test: ["CMD-SHELL", "psql -U $DB_USER -d $DB_NAME -c 'SELECT 1'"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - network1  # Connects the 'db' service to 'network1' and to express 'app'
+    healthcheck:  # Health check to ensure the database is up and running
+      test: ["CMD-SHELL", "psql -U $DB_USER -d $DB_NAME -c 'SELECT 1'"]  # Command to check database health
+      interval: 5s  # Interval between health check attempts
+      timeout: 5s  # Timeout for each health check attempt
+      retries: 5  # Number of retries before considering the service unhealthy
 
+  # Redis service
   redis:
-    image: redis
+    image: redis  # Uses the official Redis image from Docker Hub
     depends_on:
-      - app
+      - app  # Ensures 'redis' starts after the 'app' service
     networks:
-      - network2
+      - network2  # Connects the 'redis' service to 'network2' and to express 'app'
 
+# Volumes for persistent data storage
 volumes:
-  db_data:
+  db_data:  # Volume for PostgreSQL data
 
+# Networks configuration
 networks:
   network1:
-    driver: bridge
+    driver: bridge  # Uses bridge networking app and db
   network2:
-    driver: bridge
+    driver: bridge  # Uses bridge networking app and redis
