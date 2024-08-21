@@ -26,7 +26,7 @@
 
 <p  align="center">
 
-  
+This project is an Express.js backend build exercise for a web application that enables players to enjoy Tic-Tac-Toe in both 2D and 3D versions. It supports gameplay against other players or the CPU, with the backend handling game logic and state management.
 
 </p>
 
