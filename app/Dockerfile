@@ -38,4 +38,4 @@ EXPOSE 3000
 ENTRYPOINT ["/usr/local/bin/migrate_seed.sh"]
 
 # Conditional command: run npm in dev mode (HOT-RELOAD con tsx watch) if NODE_ENV=development, otherwise start the app normally
-CMD ["sh", "-c", "if [ \"$NODE_ENV\" = 'development' ]; then npm run dev; else npm run start; fi"]
+CMD ["sh", "-c", "if [ \"$NODE_ENV\" = 'development' ]; then npm run prettier; else npm run start; fi"]

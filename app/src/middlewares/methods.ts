@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { ISError } from '../errors/ErrorFactory';
 import { HttpStatusCode } from '../errors/HttpStatusCode';
 import { ErrorFactory } from '../errors/ErrorFactory';
+const ISError = ErrorFactory.ISError;
 
 /**
  * Middleware function to add custom methods to `req` and `res`.

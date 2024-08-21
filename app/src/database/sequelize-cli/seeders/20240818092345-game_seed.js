@@ -1,6 +1,6 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} Migration script to seed the 'games' table with initial data. */
+/** @type {import('sequelize-cli').Migration} Migration Script to seed the 'games' table with initial data. */
 module.exports = {
   /**
    * Runs the migration to insert seed data into the 'games' table.

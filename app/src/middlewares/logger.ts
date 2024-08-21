@@ -4,7 +4,7 @@ import path from 'path';
 
 // define file log path
 const LOG_FILE_PATH = path.join(__dirname, '../logs', 'app.log');
-const MAX_LOG_FILE_SIZE = process.env.MAX_LOG_FILE_SIZE * 1024 * 1024
+const MAX_LOG_FILE_SIZE = process.env.MAX_LOG_FILE_SIZE * 1024 * 1024;
 
 /**
  * Logger class provides static methods to log various types of messages including information, errors, and warnings. It also has methods to log
@@ -14,25 +14,24 @@ class Logger {
   /**
    * Appends a log message to the log file.
    *
-   *
+   * @private
    * @param {string} message - The log message to be written to the file.
    * @returns {Promise<void>} - A promise that resolves when the log operation is complete.
-   * @private
    */
   private static async writeLogToFile(message: string): Promise<void> {
     if (process.env.NODE_ENV !== 'development') {
       const logDir = path.dirname(LOG_FILE_PATH);
-  
+
       try {
         await fs.access(logDir);
       } catch {
         await fs.mkdir(logDir, { recursive: true });
       }
-  
+
       try {
         const fileStats = await fs.stat(LOG_FILE_PATH);
         const maxFileSize = MAX_LOG_FILE_SIZE * 1024 * 1024; // Set your max file size limit here (e.g., 5 MB)
-  
+
         if (fileStats.size >= maxFileSize) {
           const warningMessage = 'Log file size exceeds the maximum limit. Logging is paused.';
           await Logger.logWarning(warningMessage, { filePath: LOG_FILE_PATH, fileSize: fileStats.size });
@@ -44,7 +43,7 @@ class Logger {
           throw error; // If it's not a 'file not found' error, rethrow it
         }
       }
-  
+
       await fs.appendFile(LOG_FILE_PATH, `${new Date().toISOString()} - ${message}\n`, 'utf8');
     }
   }
@@ -105,7 +104,8 @@ class Logger {
    * @param {string} msg - The message prefix for each line of the data.
    */
   private static async logData(data: object, msg: string): Promise<void> {
-    const formattedData = '\n' +
+    const formattedData =
+      '\n' +
       JSON.stringify(data, null, 2)
         .split('\n')
         .map((line) => msg + line)
@@ -148,13 +148,13 @@ class Logger {
   static async logResponse(res: Response, body: any) {
     await Logger.logData(res.getHeaders(), '#LOGGER RESPONSE#: Response headers: ');
 
-    const logMessage = typeof body === 'object' ?
-      `#LOGGER RESPONSE#: Response data: ${JSON.stringify(body, null, 2)}\n` :
-      `#LOGGER RESPONSE#: Response data: ${body}\n`;
+    const logMessage =
+      typeof body === 'object'
+        ? `#LOGGER RESPONSE#: Response data: ${JSON.stringify(body, null, 2)}\n`
+        : `#LOGGER RESPONSE#: Response data: ${body}\n`;
     console.log(logMessage);
     await Logger.writeLogToFile(logMessage);
   }
-
 }
 
 /**

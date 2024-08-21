@@ -36,17 +36,16 @@ export class ErrorFactory {
         return null;
     }
   }
-}
 
-/**
- * Creates an InternalServerError with additional details and an underlying error. Here we use logStack that is very helpful for debugging and show
- * info about nested errors.
- *
- * @param {string} details - A description of the additional error details.
- * @param {Error} error - The underlying error to include.
- * @returns {Errors.ErrorMsg} An instance of InternalServerError with the provided details and underlying error.
- */
-export function ISError(details: string, error: Error): Errors.ErrorMsg {
-  Logger.logStack(`Internal Server Error LOG: ${details}`, error);
-  return new Errors.InternalServerError().setDetails(details).setErrorDetail(error);
+  /**
+   * Creates an InternalServerError with additional details and an underlying error.
+   *
+   * @param {string} details - A description of the additional error details.
+   * @param {Error} error - The underlying error to include.
+   * @returns {Errors.ErrorMsg} An instance of InternalServerError with the provided details and underlying error.
+   */
+  static ISError(details: string, error: Error): Errors.ErrorMsg {
+    Logger.logStack(`Internal Server Error LOG: ${details}`, error);
+    return new Errors.InternalServerError().setDetails(details).setErrorDetail(error);
+  }
 }

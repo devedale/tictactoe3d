@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import { ISError } from '../errors/ErrorFactory';
 import { GameRepository } from '../database/repository/game';
-import { User } from '../database/models/user';
 import { UserRepository } from '../database/repository/user';
 import BoardService from './board';
 import ExportService from './export';
+import { ErrorFactory } from '../errors/ErrorFactory';
+const ISError = ErrorFactory.ISError;
 
 const userRepository = new UserRepository();
 const gameRepository = new GameRepository();

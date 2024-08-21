@@ -1,18 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { UserRepository } from '../database/repository/user';
 import { RoleRepository } from '../database/repository/role';
-import { ISError } from '../errors/ErrorFactory';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
+import { ErrorFactory } from '../errors/ErrorFactory';
+const ISError = ErrorFactory.ISError;
 
-const MAX_EMAIL_LENGTH = 254;  // Max length for email
-const MAX_PASSWORD_LENGTH = 128;  // Max length for passwords
-
+const MAX_EMAIL_LENGTH = 254; // Max length for email
+const MAX_PASSWORD_LENGTH = 128; // Max length for passwords
 
 const userRepository = new UserRepository();
 const roleRepository = new RoleRepository();
-
-
 
 class UserService {
   /**
@@ -31,7 +29,6 @@ class UserService {
     }
 
     try {
-      
       // Check email length and format
       if (email.length > MAX_EMAIL_LENGTH) {
         return res.build('BadRequest', `Email exceeds maximum length of ${MAX_EMAIL_LENGTH} characters`);
@@ -40,7 +37,6 @@ class UserService {
       if (!emailRegex.test(email)) {
         return res.build('BadRequest', 'Invalid email format');
       }
-
 
       // Check password length
       if (password.length > MAX_PASSWORD_LENGTH) {
