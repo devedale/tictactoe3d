@@ -5,7 +5,7 @@
 
   
 
-<img src="https://img.icons8.com/?size=512&id=55494&format=png" width="100"  />
+<img src="[https://img.icons8.com/?size=512&id=55494&format=png](https://github.com/devedale/tictactoe3d/blob/main/app/assets/tictactoe.png)" width="100"  />
 
   
 
@@ -65,7 +65,7 @@
 
   
 
-<em>Developed with the software and tools below.</em>
+<em align="center">Developed with the software and tools below.</em>
 
   
 
@@ -738,7 +738,7 @@ The use case diagram represents the interactions between users and the system. I
 
 **Placeholder for Use Case Diagram**
 
-![Use Case Diagram](./assets/UseCaseDiagramTICTACTOE.drawio.png)
+![Use Case Diagram](./app/assets/UseCaseDiagramTICTACTOE.drawio.png)
 
 ### Sequence Diagrams
 
@@ -746,7 +746,7 @@ Sequence diagrams illustrate the order of operations and interactions between ob
 
 **Placeholder for Sequence Diagrams**
 
-![Sequence Diagram](./assets/SequenceDiagramTICTACTOE.drawio.png)
+![Sequence Diagram](./app/assets/SequenceDiagramTICTACTOE.drawio.png)
 
 ### Class Diagram
 
@@ -757,7 +757,7 @@ The class diagram provides a static view of the system’s structure by showing 
 
 **Placeholder for Class Diagram**
 
-![Class Diagram](./assets/ClassDiagramTICTACTOE.plantuml.png)
+![Class Diagram](./app/assets/ClassDiagramTICTACTOE.plantuml.png)
 
 ### Detailed Design
 
