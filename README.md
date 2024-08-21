@@ -3,10 +3,9 @@
 
 <p  align="center">
 
-  
-
-<img src="[https://img.icons8.com/?size=512&id=55494&format=png](https://github.com/devedale/tictactoe3d/blob/main/app/assets/tictactoe.png)" width="100"  />
-
+<a href="(https://github.com/devedale/tictactoe3d)">
+  <img src="./app/assets/tictactoe.png" width="50" alt="Tic Tac Toe" />
+</a>
   
 
 </p>
@@ -27,11 +26,7 @@
 
 <p  align="center">
 
-  
-
-<em><code>► INSERT-TEXT-HERE</code></em>
-
-  
+This project is an Express.js backend build exercise for a web application that enables players to enjoy Tic-Tac-Toe in both 2D and 3D versions. It supports gameplay against other players or the CPU, with the backend handling game logic and state management.
 
 </p>
 
@@ -65,7 +60,6 @@
 
   
 
-<em align="center">Developed with the software and tools below.</em>
 
   
 
